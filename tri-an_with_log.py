@@ -28,7 +28,8 @@ print("Use CUDA:", USE_CUDA)
 # In[54]:
 
 
-num_epoch = 60
+#num_epoch = 60
+num_epoch = 1
 batch_size_train = 32
 batch_size_eval = 256
 embed_dim = 300
@@ -423,6 +424,7 @@ def train_epoch():
     epoch_accus = []
     
     for i, batch in enumerate(train_iter):
+        print(i)
         # get batch
         d_words, d_lengths, q_words, q_lengths, c_words, c_lengths, labels = parse_batch(batch)
         
@@ -467,10 +469,11 @@ def eval_epoch(debug=False):
     
     
     if debug:
-        writer = open('data/analysis.log', 'w', encoding='utf-8')
+        writer = open('data/analysis_d_q_c.log', 'w', encoding='utf-8')
     
     
     for i, batch in enumerate(val_iter):
+        print(i)
         # get batch
         d_words, d_lengths, q_words, q_lengths, c_words, c_lengths, labels = parse_batch(batch)
         
@@ -514,6 +517,7 @@ def eval_epoch(debug=False):
 
 # In[ ]:
 
+writer_acc = open('data/analysis_accs.log', 'w', encoding='utf-8')
 
 # training loop
 for epoch in range(num_epoch):
@@ -528,6 +532,9 @@ for epoch in range(num_epoch):
     train_accu, train_loss = train_epoch()
     #eval_accu, eval_loss = eval_epoch()
     eval_accu, eval_loss = eval_epoch(debug=True)
+    
+    writer_acc.write('Epoch: {} \n'.format(str(epoch)))
+    writer_acc.write('Train accuracy: %.4f    Eval accuracy: %.4f \n' % (train_accu, eval_accu))
     
     train_accs.append(train_accu)
     eval_accs.append(eval_accu)
@@ -550,3 +557,5 @@ plt.plot(eval_accs, color='red', label='Eval accuracy')
 plt.xlabel('Iteration times')
 plt.ylabel('Rate')
 plt.show()
+
+

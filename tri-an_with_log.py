@@ -145,6 +145,7 @@ embedding_ner.weight.data.normal_(0, 0.1)
 embedding_ner = embedding_ner.to(device)
 
 
+
 # In[60]:
 
 
@@ -383,10 +384,10 @@ class TriAn(nn.Module):
         c_on_q_contexts = self.embed_dropout(self.c_on_q_attn(c_embed, q_embed, q_mask))
         c_on_d_contexts = self.embed_dropout(self.c_on_d_attn(c_embed, d_embed, d_mask))
         
-        print(d_embed.shape)
-        print(d_on_q_contexts.shape)
-        print(d_pos_embed.shape)
+        print("d_embed:",d_embed.shape)
+        print("d_ner_embed:",d_ner_embed.shape)
         # form final inputs for rnns
+        
         d_rnn_inputs = torch.cat([d_embed, d_on_q_contexts, d_pos_embed, d_ner_embed], dim=2)
         q_rnn_inputs = torch.cat([q_embed, q_pos_embed], dim=2)
         c_rnn_inputs = torch.cat([c_embed, c_on_q_contexts, c_on_d_contexts], dim=2)
@@ -448,6 +449,8 @@ def parse_batch(batch):
     c_words, c_lengths = torch.transpose(c_words, 0, 1), c_lengths
     d_pos, d_ner, q_pos = torch.transpose(d_pos, 0, 1), torch.transpose(d_ner, 0, 1), torch.transpose(q_pos, 0, 1) 
     
+    print("d_ner:",d_ner.shape)
+    print("d_words:",d_words.shape)
     
     labels = batch.label.float()
     

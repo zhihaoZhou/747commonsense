@@ -33,8 +33,8 @@ num_epoch = 1
 batch_size_train = 32
 batch_size_eval = 256
 embed_dim = 300
-embed_dim_pos = 300
-embed_dim_ner = 300
+embed_dim_pos = 12
+embed_dim_ner = 8
 # embed_from = "glove.840B.300d"
 hidden_size = 96
 num_layers = 1
@@ -107,13 +107,13 @@ combined = data.TabularDataset(
 # specify the path to the localy saved vectors
 vec = torchtext.vocab.Vectors('glove.840B.300d.txt', data_dir)
 TEXT.build_vocab(combined, vectors=vec)
-POS.build_vocab(d_pos)
-NER.build_vocab(d_ner)
+POS.build_vocab(combined)
+NER.build_vocab(combined)
 
 print('vocab size: %d' % len(TEXT.vocab))
 print('pos size: %d' % len(POS.vocab))
 print('ner size: %d' % len(NER.vocab))
-print('qpos size: %d' % len(QPOS.vocab))
+
 
 # In[58]:
 
@@ -134,20 +134,16 @@ embedding.weight.data.copy_(TEXT.vocab.vectors)
 embedding.weight.requires_grad=False
 embedding = embedding.to(device)
 
-embedding_pos = nn.Embedding(len(POS.vocab), embed_dim)
-embedding_pos.weight.data.copy_(POS.vocab.vectors)
-embedding_pos.weight.requires_grad=False
+embedding_pos = nn.Embedding(len(POS.vocab), embed_dim_pos)
+embedding_pos.weight.data.normal_(0, 0.1)
+#embedding_pos.weight.requires_grad=False
 embedding_pos = embedding_pos.to(device)
 
-embedding_ner = nn.Embedding(len(NER.vocab), embed_dim)
-embedding_ner.weight.data.copy_(NER.vocab.vectors)
-embedding_ner.weight.requires_grad=False
+embedding_ner = nn.Embedding(len(NER.vocab), embed_dim_ner)
+embedding_ner.weight.data.normal_(0, 0.1)
+#embedding_ner.weight.requires_grad=False
 embedding_ner = embedding_ner.to(device)
 
-embedding_qpos = nn.Embedding(len(QPOS.vocab), embed_dim)
-embedding_qpos.weight.data.copy_(QPOS.vocab.vectors)
-embedding_qpos.weight.requires_grad=False
-embedding_qpos = embedding_qpos.to(device)
 
 # In[60]:
 
@@ -344,12 +340,11 @@ class Bilinear(nn.Module):
 
 
 class TriAn(nn.Module):
-    def __init__(self, embedding, embedding_pos, embedding_ner, embedding_qpos):
+    def __init__(self, embedding, embedding_pos, embedding_ner):
         super(TriAn, self).__init__()
         self.embedding = embedding
         self.embedding_pos = embedding_pos
         self.embedding_ner = embedding_ner
-        self.embedding_qpos = embedding_qpos
         
         self.d_rnn = BLSTM(embed_dim * 2, hidden_size, num_layers, rnn_dropout_rate)
         self.q_rnn = BLSTM(embed_dim,     hidden_size, num_layers, rnn_dropout_rate)
@@ -375,7 +370,7 @@ class TriAn(nn.Module):
         d_embed, q_embed, c_embed = self.embedding(d_words), self.embedding(q_words), self.embedding(c_words)
         d_embed, q_embed, c_embed = self.embed_dropout(d_embed), self.embed_dropout(q_embed),self.embed_dropout(c_embed)
         
-        d_pos_embed, d_ner_embed, q_pos_embed = self.embedding_pos(d_pos), self.embedding_ner(d_ner), self.embedding_qpos(q_pos) 
+        d_pos_embed, d_ner_embed, q_pos_embed = self.embedding_pos(d_pos), self.embedding_ner(d_ner), self.embedding_pos(q_pos) 
         d_pos_embed, d_ner_embed, q_pos_embed = self.embed_dropout(d_pos_embed), self.embed_dropout(d_ner_embed),self.embed_dropout(q_pos_embed) 
         
         # get masks
@@ -388,6 +383,9 @@ class TriAn(nn.Module):
         c_on_q_contexts = self.embed_dropout(self.c_on_q_attn(c_embed, q_embed, q_mask))
         c_on_d_contexts = self.embed_dropout(self.c_on_d_attn(c_embed, d_embed, d_mask))
         
+        print(d_embed.shape)
+        print(d_on_q_contexts.shape)
+        print(d_pos_embed.shape)
         # form final inputs for rnns
         d_rnn_inputs = torch.cat([d_embed, d_on_q_contexts, d_pos_embed, d_ner_embed], dim=2)
         q_rnn_inputs = torch.cat([q_embed, q_pos_embed], dim=2)
@@ -413,7 +411,7 @@ class TriAn(nn.Module):
 # In[68]:
 
 
-model = TriAn(embedding, embedding_pos, embedding_ner, embedding_qpos).to(device)
+model = TriAn(embedding, embedding_pos, embedding_ner).to(device)
 
 criterion = nn.BCELoss().to(device)
 optimizer = optim.Adamax(model.parameters(), lr=lr, weight_decay=0)
@@ -435,22 +433,22 @@ def get_accuaracy(outputs, labels):
 
 
 def parse_batch(batch):
+    
+    print(batch)
     d_words, d_lengths = batch.d_words
     q_words, q_lengths = batch.q_words
     c_words, c_lengths = batch.c_words
-    d_pos, d_ner, q_pos = batch.d_pos, batch.d_ner, batch.q_pos
-    
-    print(type(d_pos))
-    print(type(d_words))
+    d_pos, _ = batch.d_pos 
+    d_ner, _ = batch.d_ner 
+    q_pos, _ = batch.q_pos
     
     
     d_words, d_lengths = torch.transpose(d_words, 0, 1), d_lengths
     q_words, q_lengths = torch.transpose(q_words, 0, 1), q_lengths
     c_words, c_lengths = torch.transpose(c_words, 0, 1), c_lengths
-    #d_pos, d_ner, q_pos = torch.transpose(d_pos, 0, 1), torch.transpose(d_ner, 0, 1), torch.transpose(q_pos, 0, 1) 
-
-    print(type(d_pos))
-    print(type(d_words))
+    d_pos, d_ner, q_pos = torch.transpose(d_pos, 0, 1), torch.transpose(d_ner, 0, 1), torch.transpose(q_pos, 0, 1) 
+    
+    
     labels = batch.label.float()
     
     return d_words, d_pos, d_ner, d_lengths, q_words, q_pos, q_lengths, c_words, c_lengths, labels

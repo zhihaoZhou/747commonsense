@@ -73,7 +73,6 @@ test_fname = 'test-data-processed.json'
 TEXT = data.ReversibleField(sequential=True, lower=False, include_lengths=True)
 POS = data.ReversibleField(sequential=True, lower=False, include_lengths=True)
 NER = data.ReversibleField(sequential=True, lower=False, include_lengths=True)
-QPOS = data.ReversibleField(sequential=True, lower=False, include_lengths=True)
 
 train, val, test = data.TabularDataset.splits(
     path=data_dir, train=train_fname,
@@ -82,7 +81,7 @@ train, val, test = data.TabularDataset.splits(
             'd_pos':   ('d_pos', POS),
             'd_ner':   ('d_ner', NER),
             'q_words': ('q_words', TEXT),
-            'q_pos':   ('q_pos', QPOS),
+            'q_pos':   ('q_pos', POS),
             'c_words': ('c_words', TEXT),           
             'label': ('label', data.Field(sequential=False, use_vocab=False))
            })
@@ -97,40 +96,19 @@ print('train: %d, val: %d, test: %d' % (len(train), len(val), len(test)))
 combined = data.TabularDataset(
     path=os.path.join(data_dir, combined_fname), format='json',
     fields={'d_words': ('d_words', TEXT),
+            'd_pos':   ('d_pos', POS),
+            'd_ner':   ('d_ner', NER),
             'q_words': ('q_words', TEXT),
-            'c_words': ('c_words', TEXT),
-            'label': ('label', data.Field(sequential=False, use_vocab=False))
-           })
-d_pos = data.TabularDataset(
-    path=os.path.join(data_dir, combined_fname), format='json',
-    fields={'d_pos':   ('d_pos', POS),
-            'q_words': ('q_words', POS),
-            'c_words': ('c_words', POS),
-            'label': ('label', data.Field(sequential=False, use_vocab=False))
-           })
-
-d_ner = data.TabularDataset(
-    path=os.path.join(data_dir, combined_fname), format='json',
-    fields={'d_ner':   ('d_ner', NER),
-            'q_words': ('q_words', NER),
-            'c_words': ('c_words', NER),
-            'label': ('label', data.Field(sequential=False, use_vocab=False))
-           })
-
-q_pos = data.TabularDataset(
-    path=os.path.join(data_dir, combined_fname), format='json',
-    fields={'q_pos':   ('q_pos', QPOS),
-            'q_words': ('q_words', QPOS),
-            'c_words': ('c_words', QPOS),
+            'q_pos':   ('q_pos', POS),
+            'c_words': ('c_words', TEXT),           
             'label': ('label', data.Field(sequential=False, use_vocab=False))
            })
 
 # specify the path to the localy saved vectors
 vec = torchtext.vocab.Vectors('glove.840B.300d.txt', data_dir)
 TEXT.build_vocab(combined, vectors=vec)
-POS.build_vocab(d_pos, vectors=vec)
-NER.build_vocab(d_ner, vectors=vec)
-QPOS.build_vocab(q_pos, vectors=vec)
+POS.build_vocab(d_pos)
+NER.build_vocab(d_ner)
 
 print('vocab size: %d' % len(TEXT.vocab))
 print('pos size: %d' % len(POS.vocab))

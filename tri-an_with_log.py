@@ -33,6 +33,8 @@ num_epoch = 1
 batch_size_train = 32
 batch_size_eval = 256
 embed_dim = 300
+embed_dim_pos = 300
+embed_dim_ner = 300
 # embed_from = "glove.840B.300d"
 hidden_size = 96
 num_layers = 1
@@ -58,6 +60,7 @@ lr = 2e-3
 data_dir = 'preprocessed'
 combined_fname = 'all-combined-data-processed.json'
 train_fname = 'train-trial-combined-data-processed.json'
+#train_fname = 'dev-data-processed.json'
 dev_fname = 'dev-data-processed.json'
 test_fname = 'test-data-processed.json'
 
@@ -68,13 +71,19 @@ test_fname = 'test-data-processed.json'
 
 
 TEXT = data.ReversibleField(sequential=True, lower=False, include_lengths=True)
+POS = data.ReversibleField(sequential=True, lower=False, include_lengths=True)
+NER = data.ReversibleField(sequential=True, lower=False, include_lengths=True)
+QPOS = data.ReversibleField(sequential=True, lower=False, include_lengths=True)
 
 train, val, test = data.TabularDataset.splits(
     path=data_dir, train=train_fname,
     validation=dev_fname, test=test_fname, format='json',
     fields={'d_words': ('d_words', TEXT),
+            'd_pos':   ('d_pos', POS),
+            'd_ner':   ('d_ner', NER),
             'q_words': ('q_words', TEXT),
-            'c_words': ('c_words', TEXT),
+            'q_pos':   ('q_pos', QPOS),
+            'c_words': ('c_words', TEXT),           
             'label': ('label', data.Field(sequential=False, use_vocab=False))
            })
 
@@ -92,13 +101,41 @@ combined = data.TabularDataset(
             'c_words': ('c_words', TEXT),
             'label': ('label', data.Field(sequential=False, use_vocab=False))
            })
+d_pos = data.TabularDataset(
+    path=os.path.join(data_dir, combined_fname), format='json',
+    fields={'d_pos':   ('d_pos', POS),
+            'q_words': ('q_words', POS),
+            'c_words': ('c_words', POS),
+            'label': ('label', data.Field(sequential=False, use_vocab=False))
+           })
+
+d_ner = data.TabularDataset(
+    path=os.path.join(data_dir, combined_fname), format='json',
+    fields={'d_ner':   ('d_ner', NER),
+            'q_words': ('q_words', NER),
+            'c_words': ('c_words', NER),
+            'label': ('label', data.Field(sequential=False, use_vocab=False))
+           })
+
+q_pos = data.TabularDataset(
+    path=os.path.join(data_dir, combined_fname), format='json',
+    fields={'q_pos':   ('q_pos', QPOS),
+            'q_words': ('q_words', QPOS),
+            'c_words': ('c_words', QPOS),
+            'label': ('label', data.Field(sequential=False, use_vocab=False))
+           })
 
 # specify the path to the localy saved vectors
 vec = torchtext.vocab.Vectors('glove.840B.300d.txt', data_dir)
-# TEXT.build_vocab(combined, vectors=embed_from)
 TEXT.build_vocab(combined, vectors=vec)
-print('vocab size: %d' % len(TEXT.vocab))
+POS.build_vocab(d_pos, vectors=vec)
+NER.build_vocab(d_ner, vectors=vec)
+QPOS.build_vocab(q_pos, vectors=vec)
 
+print('vocab size: %d' % len(TEXT.vocab))
+print('pos size: %d' % len(POS.vocab))
+print('ner size: %d' % len(NER.vocab))
+print('qpos size: %d' % len(QPOS.vocab))
 
 # In[58]:
 
@@ -114,12 +151,25 @@ print('train batches: %d, val batches: %d, test batches: %d' % (len(train_iter),
 
 # In[59]:
 
-
 embedding = nn.Embedding(len(TEXT.vocab), embed_dim)
 embedding.weight.data.copy_(TEXT.vocab.vectors)
 embedding.weight.requires_grad=False
 embedding = embedding.to(device)
 
+embedding_pos = nn.Embedding(len(POS.vocab), embed_dim)
+embedding_pos.weight.data.copy_(POS.vocab.vectors)
+embedding_pos.weight.requires_grad=False
+embedding_pos = embedding_pos.to(device)
+
+embedding_ner = nn.Embedding(len(NER.vocab), embed_dim)
+embedding_ner.weight.data.copy_(NER.vocab.vectors)
+embedding_ner.weight.requires_grad=False
+embedding_ner = embedding_ner.to(device)
+
+embedding_qpos = nn.Embedding(len(QPOS.vocab), embed_dim)
+embedding_qpos.weight.data.copy_(QPOS.vocab.vectors)
+embedding_qpos.weight.requires_grad=False
+embedding_qpos = embedding_qpos.to(device)
 
 # In[60]:
 
@@ -316,9 +366,13 @@ class Bilinear(nn.Module):
 
 
 class TriAn(nn.Module):
-    def __init__(self, embedding):
+    def __init__(self, embedding, embedding_pos, embedding_ner, embedding_qpos):
         super(TriAn, self).__init__()
         self.embedding = embedding
+        self.embedding_pos = embedding_pos
+        self.embedding_ner = embedding_ner
+        self.embedding_qpos = embedding_qpos
+        
         self.d_rnn = BLSTM(embed_dim * 2, hidden_size, num_layers, rnn_dropout_rate)
         self.q_rnn = BLSTM(embed_dim,     hidden_size, num_layers, rnn_dropout_rate)
         self.c_rnn = BLSTM(embed_dim * 3, hidden_size, num_layers, rnn_dropout_rate)
@@ -338,10 +392,13 @@ class TriAn(nn.Module):
         
         self.sigmoid = nn.Sigmoid()
     
-    def forward(self, d_words, d_lengths, q_words, q_lengths, c_words, c_lengths):
+    def forward(self, d_words, d_pos, d_ner, d_lengths, q_words, q_pos, q_lengths, c_words, c_lengths):
         # embed inputs
         d_embed, q_embed, c_embed = self.embedding(d_words), self.embedding(q_words), self.embedding(c_words)
         d_embed, q_embed, c_embed = self.embed_dropout(d_embed), self.embed_dropout(q_embed),self.embed_dropout(c_embed)
+        
+        d_pos_embed, d_ner_embed, q_pos_embed = self.embedding_pos(d_pos), self.embedding_ner(d_ner), self.embedding_qpos(q_pos) 
+        d_pos_embed, d_ner_embed, q_pos_embed = self.embed_dropout(d_pos_embed), self.embed_dropout(d_ner_embed),self.embed_dropout(q_pos_embed) 
         
         # get masks
         d_mask = lengths_to_mask(d_lengths)
@@ -354,8 +411,8 @@ class TriAn(nn.Module):
         c_on_d_contexts = self.embed_dropout(self.c_on_d_attn(c_embed, d_embed, d_mask))
         
         # form final inputs for rnns
-        d_rnn_inputs = torch.cat([d_embed, d_on_q_contexts], dim=2)
-        q_rnn_inputs = torch.cat([q_embed], dim=2)
+        d_rnn_inputs = torch.cat([d_embed, d_on_q_contexts, d_pos_embed, d_ner_embed], dim=2)
+        q_rnn_inputs = torch.cat([q_embed, q_pos_embed], dim=2)
         c_rnn_inputs = torch.cat([c_embed, c_on_q_contexts, c_on_d_contexts], dim=2)
         
         # calculate rnn outputs
@@ -378,7 +435,7 @@ class TriAn(nn.Module):
 # In[68]:
 
 
-model = TriAn(embedding).to(device)
+model = TriAn(embedding, embedding_pos, embedding_ner, embedding_qpos).to(device)
 
 criterion = nn.BCELoss().to(device)
 optimizer = optim.Adamax(model.parameters(), lr=lr, weight_decay=0)
@@ -403,14 +460,22 @@ def parse_batch(batch):
     d_words, d_lengths = batch.d_words
     q_words, q_lengths = batch.q_words
     c_words, c_lengths = batch.c_words
-
+    d_pos, d_ner, q_pos = batch.d_pos, batch.d_ner, batch.q_pos
+    
+    print(type(d_pos))
+    print(type(d_words))
+    
+    
     d_words, d_lengths = torch.transpose(d_words, 0, 1), d_lengths
     q_words, q_lengths = torch.transpose(q_words, 0, 1), q_lengths
     c_words, c_lengths = torch.transpose(c_words, 0, 1), c_lengths
+    #d_pos, d_ner, q_pos = torch.transpose(d_pos, 0, 1), torch.transpose(d_ner, 0, 1), torch.transpose(q_pos, 0, 1) 
 
+    print(type(d_pos))
+    print(type(d_words))
     labels = batch.label.float()
     
-    return d_words, d_lengths, q_words, q_lengths, c_words, c_lengths, labels
+    return d_words, d_pos, d_ner, d_lengths, q_words, q_pos, q_lengths, c_words, c_lengths, labels
 
 
 # In[71]:
@@ -426,11 +491,11 @@ def train_epoch():
     for i, batch in enumerate(train_iter):
         print(i)
         # get batch
-        d_words, d_lengths, q_words, q_lengths, c_words, c_lengths, labels = parse_batch(batch)
+        d_words, d_pos, d_ner, d_lengths, q_words, q_pos, q_lengths, c_words, c_lengths, labels = parse_batch(batch)
         
         # get outputs and loss
         optimizer.zero_grad()
-        outputs = model(d_words, d_lengths, q_words, q_lengths, c_words, c_lengths)
+        outputs = model(d_words, d_pos, d_ner, d_lengths, q_words, q_pos, q_lengths, c_words, c_lengths)
         loss = criterion(outputs, labels)
         
         # update model
@@ -494,19 +559,20 @@ def eval_epoch(debug=False):
             epoch_accus.append(accu.item())
                 
     if debug:
-        temp_d = ''
-        temp_q = ''
+        temp_d = d_words_all[0]
+        temp_q = q_words_all[0]
 
         for j in range(len(val_iter)):
-            if d_words[j]!=temp_d:  
-                writer.write('Passage: %s\n' % d_words[j])
-                temp_d = d_words[j]
-            if q_words[j]!=temp_q:
-                writer.write('Questions: %s\n' % q_words[j])
-                temp_q = q_words[j]
+            if d_words_all[j]!=temp_d:  
+                writer.write('Passage: %s\n' % d_words_all[j])
+                temp_d = d_words_all[j]
+                
+            if q_words_all[j]!=temp_q:
+                writer.write('Questions: %s\n' % q_words_all[j])
+                temp_q = q_words_all[j]
             # choice with '*' means answered correctly
-            writer.write('*' if outputs[j]==labels[j] else ' ')
-            writer.write('%s \n' % c_words[j])
+            writer.write('*' if prediction[j]==correct_labels[j] else ' ')
+            writer.write('%s \n' % c_words_all[j])
 
              
     accu_avg = np.mean(np.array(epoch_accus))

@@ -71,15 +71,26 @@ test_fname = 'test-data-processed.json'
 def tokenizer(text):
     return text.split(" ")
 
+def to_numeric(tf_batch, tf_lens):
+    
+    for i in range(len(tf_batch)):
+        for j in range(len(tf_batch[0])):
+            if tf_batch[i][j] == '<pad>':
+                tf_batch[i][j] = float(0)
+            else:
+                tf_batch[i][j] = float(tf_batch[i][j])
+
+    return tf_batch
+
 TEXT = data.ReversibleField(sequential=True, tokenize=tokenizer, lower=False, include_lengths=True)
 POS = data.ReversibleField(sequential=True, lower=False, include_lengths=True)
 NER = data.ReversibleField(sequential=True, lower=False, include_lengths=True)
 LABEL = data.Field(sequential=False, use_vocab=False)
-IN_Q = data.Field(sequential=True, use_vocab=False, include_lengths=True)
-IN_C = data.Field(sequential=True, use_vocab=False, include_lengths=True)
-LEMMA_IN_Q = data.Field(sequential=True, use_vocab=False, include_lengths=True)
-LEMMA_IN_C = data.Field(sequential=True, use_vocab=False, include_lengths=True)
-TF = data.Field(sequential=True, use_vocab=False, include_lengths=True)
+IN_Q = data.Field(sequential=True, use_vocab=False, include_lengths=True, postprocessing=to_numeric)
+IN_C = data.Field(sequential=True, use_vocab=False, include_lengths=True, postprocessing=to_numeric)
+LEMMA_IN_Q = data.Field(sequential=True, use_vocab=False, include_lengths=True, postprocessing=to_numeric)
+LEMMA_IN_C = data.Field(sequential=True, use_vocab=False, include_lengths=True, postprocessing=to_numeric)
+TF = data.Field(sequential=True, use_vocab=False, include_lengths=True, postprocessing=to_numeric)
 
 train, val, test = data.TabularDataset.splits(
     path=data_dir, train=train_fname,
@@ -383,7 +394,8 @@ class TriAn(nn.Module):
         
         self.sigmoid = nn.Sigmoid()
     
-    def forward(self, d_words, d_pos, d_ner, d_lengths, q_words, q_pos, q_lengths, c_words, c_lengths):
+    def forward(self, d_words, d_pos, d_ner, d_lengths, q_words, q_pos, q_lengths, c_words, c_lengths, \
+        in_q, in_c, lemma_in_q, lemma_in_c, tf):
         # embed inputs
         d_embed, q_embed, c_embed = self.embedding(d_words), self.embedding(q_words), self.embedding(c_words)
         d_embed, q_embed, c_embed = self.embed_dropout(d_embed), self.embed_dropout(q_embed),self.embed_dropout(c_embed)
@@ -403,7 +415,7 @@ class TriAn(nn.Module):
         
         # form final inputs for rnns
         
-        d_rnn_inputs = torch.cat([d_embed, d_on_q_contexts, d_pos_embed, d_ner_embed], dim=2)
+        d_rnn_inputs = torch.cat([d_embed, d_on_q_contexts, d_pos_embed, d_ner_embed, tf], dim=2)
         q_rnn_inputs = torch.cat([q_embed, q_pos_embed], dim=2)
         c_rnn_inputs = torch.cat([c_embed, c_on_q_contexts, c_on_d_contexts], dim=2)
         
@@ -456,25 +468,22 @@ def parse_batch(batch):
     d_pos, _ = batch.d_pos 
     d_ner, _ = batch.d_ner 
     q_pos, _ = batch.q_pos
-    in_q, in_q_lengths = batch.in_q
-    in_c, in_c_lengths = batch.in_c
-    lemma_in_q, lemma_in_q_lengths = batch.lemma_in_q
-    lemma_in_c, lemma_in_c_lengths = batch.lemma_in_c
-    tf, tf_lengths = batch.tf
-
-    print(in_q_lengths)
-    print(in_c_lengths)
-    print(lemma_in_q_lengths)
-    print(lemma_in_c_lengths)
-    print(tf_lengths)
-
-    assert 1 == 0
+    in_q, _ = batch.in_q
+    in_c, _ = batch.in_c
+    lemma_in_q, _ = batch.lemma_in_q
+    lemma_in_c, _ = batch.lemma_in_c
+    tf, _ = batch.tf
     
     d_words, d_lengths = torch.transpose(d_words, 0, 1), d_lengths
     q_words, q_lengths = torch.transpose(q_words, 0, 1), q_lengths
     c_words, c_lengths = torch.transpose(c_words, 0, 1), c_lengths
     d_pos, d_ner, q_pos = torch.transpose(d_pos, 0, 1), torch.transpose(d_ner, 0, 1), torch.transpose(q_pos, 0, 1) 
     
+    in_q = torch.transpose(in_q, 0, 1)
+    in_c = torch.transpose(in_c, 0, 1)
+    lemma_in_q = torch.transpose(lemma_in_q, 0, 1)
+    lemma_in_c = torch.transpose(lemma_in_c, 0, 1)
+    tf = torch.transpose(tf, 0, 1)
     
     labels = batch.label.float()
     
@@ -494,11 +503,13 @@ def train_epoch():
     
     for i, batch in enumerate(train_iter):
         # get batch
-        d_words, d_pos, d_ner, d_lengths, q_words, q_pos, q_lengths, c_words, c_lengths, labels = parse_batch(batch)
+        d_words, d_pos, d_ner, d_lengths, q_words, q_pos, q_lengths, c_words, c_lengths, \
+            labels, in_q, in_c, lemma_in_q, lemma_in_c, tf = parse_batch(batch)
         
         # get outputs and loss
         optimizer.zero_grad()
-        outputs = model(d_words, d_pos, d_ner, d_lengths, q_words, q_pos, q_lengths, c_words, c_lengths)
+        outputs = model(d_words, d_pos, d_ner, d_lengths, q_words, q_pos, q_lengths, c_words, c_lengths, \
+            in_q, in_c, lemma_in_q, lemma_in_c, tf)
         loss = criterion(outputs, labels)
         
         # update model

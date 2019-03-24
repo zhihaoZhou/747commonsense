@@ -34,6 +34,7 @@ batch_size_eval = 256
 embed_dim = 300
 embed_dim_pos = 12
 embed_dim_ner = 8
+embed_dim_value = 1
 # embed_from = "glove.840B.300d"
 hidden_size = 96
 num_layers = 1
@@ -375,7 +376,7 @@ class TriAn(nn.Module):
         self.embedding_pos = embedding_pos
         self.embedding_ner = embedding_ner
         
-        self.d_rnn = BLSTM(embed_dim * 2 + embed_dim_pos + embed_dim_ner, hidden_size, num_layers, rnn_dropout_rate)
+        self.d_rnn = BLSTM(embed_dim * 2 + embed_dim_pos + embed_dim_ner + embed_dim_value * 5, hidden_size, num_layers, rnn_dropout_rate)
         self.q_rnn = BLSTM(embed_dim + embed_dim_pos,     hidden_size, num_layers, rnn_dropout_rate)
         self.c_rnn = BLSTM(embed_dim * 3, hidden_size, num_layers, rnn_dropout_rate)
         
@@ -414,15 +415,15 @@ class TriAn(nn.Module):
         c_on_d_contexts = self.embed_dropout(self.c_on_d_attn(c_embed, d_embed, d_mask))
         
         # form final inputs for rnns
-        
-        d_rnn_inputs = torch.cat([d_embed, d_on_q_contexts, d_pos_embed, d_ner_embed, tf], dim=2)
+        d_rnn_inputs = torch.cat([d_embed, d_on_q_contexts, d_pos_embed, d_ner_embed, in_q, in_c, \
+            lemma_in_q, lemma_in_c, tf], dim=2)
         q_rnn_inputs = torch.cat([q_embed, q_pos_embed], dim=2)
         c_rnn_inputs = torch.cat([c_embed, c_on_q_contexts, c_on_d_contexts], dim=2)
         
         # calculate rnn outputs
         d_rnn_outputs = self.d_rnn(d_rnn_inputs, d_lengths)
         q_rnn_outputs = self.q_rnn(q_rnn_inputs, q_lengths)
-        c_rnn_outputs = self.c_rnn(c_rnn_inputs, c_lengths)        
+        c_rnn_outputs = self.c_rnn(c_rnn_inputs, c_lengths)     
         
         # get final representations
         q_rep = self.q_encode(q_rnn_outputs, q_mask)
@@ -465,14 +466,14 @@ def parse_batch(batch):
     d_words, d_lengths = batch.d_words
     q_words, q_lengths = batch.q_words
     c_words, c_lengths = batch.c_words
-    d_pos, _ = batch.d_pos 
-    d_ner, _ = batch.d_ner 
-    q_pos, _ = batch.q_pos
-    in_q, _ = batch.in_q
-    in_c, _ = batch.in_c
-    lemma_in_q, _ = batch.lemma_in_q
-    lemma_in_c, _ = batch.lemma_in_c
-    tf, _ = batch.tf
+    d_pos = batch.d_pos[0]
+    d_ner = batch.d_ner[0]
+    q_pos = batch.q_pos[0]
+    in_q = batch.in_q[0].unsqueeze(dim=2).float()
+    in_c = batch.in_c[0].unsqueeze(dim=2).float()
+    lemma_in_q = batch.lemma_in_q[0].unsqueeze(dim=2).float()
+    lemma_in_c = batch.lemma_in_c[0].unsqueeze(dim=2).float()
+    tf = batch.tf[0].unsqueeze(dim=2).float()
     
     d_words, d_lengths = torch.transpose(d_words, 0, 1), d_lengths
     q_words, q_lengths = torch.transpose(q_words, 0, 1), q_lengths
@@ -553,7 +554,8 @@ def eval_epoch(debug=False):
     
     for i, batch in enumerate(val_iter):
         # get batch
-        d_words, d_pos, d_ner, d_lengths, q_words, q_pos, q_lengths, c_words, c_lengths, labels = parse_batch(batch)
+        d_words, d_pos, d_ner, d_lengths, q_words, q_pos, q_lengths, c_words, c_lengths, \
+            labels, in_q, in_c, lemma_in_q, lemma_in_c, tf = parse_batch(batch)
         
         correct_labels += [float(label) for label in labels]
         d_words_all.append(d_words)
@@ -562,7 +564,8 @@ def eval_epoch(debug=False):
         
         # eval
         with torch.no_grad():
-            outputs = model(d_words, d_pos, d_ner, d_lengths, q_words, q_pos, q_lengths, c_words, c_lengths)
+            outputs = model(d_words, d_pos, d_ner, d_lengths, q_words, q_pos, \
+                q_lengths, c_words, c_lengths, in_q, in_c, lemma_in_q, lemma_in_c, tf)
             prediction += [float(output) for output in outputs]
         
             loss = criterion(outputs, labels)

@@ -69,10 +69,13 @@ test_fname = 'test-data-processed.json'
 
 # In[56]:
 
+def tokenizer(text):
+    return text.split(" ")
 
-TEXT = data.ReversibleField(sequential=True, lower=False, include_lengths=True)
+TEXT = data.ReversibleField(sequential=True, tokenize=tokenizer, lower=False, include_lengths=True)
 POS = data.ReversibleField(sequential=True, lower=False, include_lengths=True)
 NER = data.ReversibleField(sequential=True, lower=False, include_lengths=True)
+LABEL = data.Field(sequential=False, use_vocab=False) 
 
 train, val, test = data.TabularDataset.splits(
     path=data_dir, train=train_fname,
@@ -83,7 +86,7 @@ train, val, test = data.TabularDataset.splits(
             'q_words': ('q_words', TEXT),
             'q_pos':   ('q_pos', POS),
             'c_words': ('c_words', TEXT),           
-            'label': ('label', data.Field(sequential=False, use_vocab=False))
+            'label': ('label', LABEL)
            })
 
 print('train: %d, val: %d, test: %d' % (len(train), len(val), len(test)))
@@ -101,7 +104,7 @@ combined = data.TabularDataset(
             'q_words': ('q_words', TEXT),
             'q_pos':   ('q_pos', POS),
             'c_words': ('c_words', TEXT),           
-            'label': ('label', data.Field(sequential=False, use_vocab=False))
+            'label': ('label', LABEL)
            })
 
 # specify the path to the localy saved vectors
@@ -347,8 +350,8 @@ class TriAn(nn.Module):
         self.embedding_pos = embedding_pos
         self.embedding_ner = embedding_ner
         
-        self.d_rnn = BLSTM(embed_dim * 2, hidden_size, num_layers, rnn_dropout_rate)
-        self.q_rnn = BLSTM(embed_dim,     hidden_size, num_layers, rnn_dropout_rate)
+        self.d_rnn = BLSTM(embed_dim * 2 + embed_dim_pos + embed_dim_ner, hidden_size, num_layers, rnn_dropout_rate)
+        self.q_rnn = BLSTM(embed_dim + embed_dim_pos,     hidden_size, num_layers, rnn_dropout_rate)
         self.c_rnn = BLSTM(embed_dim * 3, hidden_size, num_layers, rnn_dropout_rate)
         
         self.embed_dropout = nn.Dropout(embed_dropout_rate)
@@ -384,8 +387,6 @@ class TriAn(nn.Module):
         c_on_q_contexts = self.embed_dropout(self.c_on_q_attn(c_embed, q_embed, q_mask))
         c_on_d_contexts = self.embed_dropout(self.c_on_d_attn(c_embed, d_embed, d_mask))
         
-        print("d_embed:",d_embed.shape)
-        print("d_ner_embed:",d_ner_embed.shape)
         # form final inputs for rnns
         
         d_rnn_inputs = torch.cat([d_embed, d_on_q_contexts, d_pos_embed, d_ner_embed], dim=2)
@@ -435,7 +436,6 @@ def get_accuaracy(outputs, labels):
 
 def parse_batch(batch):
     
-    print(batch)
     d_words, d_lengths = batch.d_words
     q_words, q_lengths = batch.q_words
     c_words, c_lengths = batch.c_words
@@ -449,8 +449,6 @@ def parse_batch(batch):
     c_words, c_lengths = torch.transpose(c_words, 0, 1), c_lengths
     d_pos, d_ner, q_pos = torch.transpose(d_pos, 0, 1), torch.transpose(d_ner, 0, 1), torch.transpose(q_pos, 0, 1) 
     
-    print("d_ner:",d_ner.shape)
-    print("d_words:",d_words.shape)
     
     labels = batch.label.float()
     

@@ -28,8 +28,7 @@ print("Use CUDA:", USE_CUDA)
 # In[54]:
 
 
-#num_epoch = 60
-num_epoch = 1
+num_epoch = 60
 batch_size_train = 32
 batch_size_eval = 256
 embed_dim = 300
@@ -75,7 +74,12 @@ def tokenizer(text):
 TEXT = data.ReversibleField(sequential=True, tokenize=tokenizer, lower=False, include_lengths=True)
 POS = data.ReversibleField(sequential=True, lower=False, include_lengths=True)
 NER = data.ReversibleField(sequential=True, lower=False, include_lengths=True)
-LABEL = data.Field(sequential=False, use_vocab=False) 
+LABEL = data.Field(sequential=False, use_vocab=False)
+IN_Q = data.Field(sequential=True, use_vocab=False, include_lengths=True)
+IN_C = data.Field(sequential=True, use_vocab=False, include_lengths=True)
+LEMMA_IN_Q = data.Field(sequential=True, use_vocab=False, include_lengths=True)
+LEMMA_IN_C = data.Field(sequential=True, use_vocab=False, include_lengths=True)
+TF = data.Field(sequential=True, use_vocab=False, include_lengths=True)
 
 train, val, test = data.TabularDataset.splits(
     path=data_dir, train=train_fname,
@@ -85,8 +89,13 @@ train, val, test = data.TabularDataset.splits(
             'd_ner':   ('d_ner', NER),
             'q_words': ('q_words', TEXT),
             'q_pos':   ('q_pos', POS),
-            'c_words': ('c_words', TEXT),           
-            'label': ('label', LABEL)
+            'c_words': ('c_words', TEXT),
+            'label': ('label', LABEL),
+            'in_q': ('in_q', IN_Q),
+            'in_c': ('in_c', IN_C),
+            'lemma_in_q': ('lemma_in_q', LEMMA_IN_Q),
+            'lemma_in_c': ('lemma_in_c', LEMMA_IN_C),
+            'tf': ('tf', TF)
            })
 
 print('train: %d, val: %d, test: %d' % (len(train), len(val), len(test)))
@@ -103,8 +112,13 @@ combined = data.TabularDataset(
             'd_ner':   ('d_ner', NER),
             'q_words': ('q_words', TEXT),
             'q_pos':   ('q_pos', POS),
-            'c_words': ('c_words', TEXT),           
-            'label': ('label', LABEL)
+            'c_words': ('c_words', TEXT),
+            'label': ('label', LABEL),
+            'in_q': ('in_q', IN_Q),
+            'in_c': ('in_c', IN_C),
+            'lemma_in_q': ('lemma_in_q', LEMMA_IN_Q),
+            'lemma_in_c': ('lemma_in_c', LEMMA_IN_C),
+            'tf': ('tf', TF)
            })
 
 # specify the path to the localy saved vectors
@@ -152,7 +166,7 @@ embedding_ner = embedding_ner.to(device)
 # In[60]:
 
 
-embedding.weight.shape
+print(embedding.weight.shape)
 
 
 # # Build model
@@ -427,8 +441,8 @@ scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[10,15], gamma=
 
 def get_accuaracy(outputs, labels):
     preds = (outputs > 0.5).float()
-    acc = torch.mean((preds==labels).float())
-    return acc
+    correct_num = torch.sum((preds == labels).float())
+    return correct_num
 
 
 # In[70]:
@@ -442,7 +456,19 @@ def parse_batch(batch):
     d_pos, _ = batch.d_pos 
     d_ner, _ = batch.d_ner 
     q_pos, _ = batch.q_pos
-    
+    in_q, in_q_lengths = batch.in_q
+    in_c, in_c_lengths = batch.in_c
+    lemma_in_q, lemma_in_q_lengths = batch.lemma_in_q
+    lemma_in_c, lemma_in_c_lengths = batch.lemma_in_c
+    tf, tf_lengths = batch.tf
+
+    print(in_q_lengths)
+    print(in_c_lengths)
+    print(lemma_in_q_lengths)
+    print(lemma_in_c_lengths)
+    print(tf_lengths)
+
+    assert 1 == 0
     
     d_words, d_lengths = torch.transpose(d_words, 0, 1), d_lengths
     q_words, q_lengths = torch.transpose(q_words, 0, 1), q_lengths
@@ -452,7 +478,8 @@ def parse_batch(batch):
     
     labels = batch.label.float()
     
-    return d_words, d_pos, d_ner, d_lengths, q_words, q_pos, q_lengths, c_words, c_lengths, labels
+    return d_words, d_pos, d_ner, d_lengths, q_words, q_pos, q_lengths, c_words, c_lengths, \
+        labels, in_q, in_c, lemma_in_q, lemma_in_c, tf
 
 
 # In[71]:
@@ -463,10 +490,9 @@ def train_epoch():
     model.train()
     
     epoch_losses = []
-    epoch_accus = []
+    epoch_accus = 0.0
     
     for i, batch in enumerate(train_iter):
-        print(i)
         # get batch
         d_words, d_pos, d_ner, d_lengths, q_words, q_pos, q_lengths, c_words, c_lengths, labels = parse_batch(batch)
         
@@ -484,11 +510,11 @@ def train_epoch():
         
         # record losses and accuracies
         epoch_losses.append(loss.item())
-        accu = get_accuaracy(outputs, labels)
-        epoch_accus.append(accu.item())
+        correct_num = get_accuaracy(outputs, labels)
+        epoch_accus += correct_num.item()
 #         break
     
-    accu_avg = np.mean(np.array(epoch_accus))
+    accu_avg = epoch_accus / len(train)
     loss_avg = np.mean(np.array(epoch_losses))
     
     return accu_avg, loss_avg
@@ -501,7 +527,7 @@ def eval_epoch(debug=False):
     model.eval()
     
     epoch_losses = []
-    epoch_accus = []
+    epoch_accus = 0.0
     
     correct_labels = []
     prediction = []
@@ -515,9 +541,8 @@ def eval_epoch(debug=False):
     
     
     for i, batch in enumerate(val_iter):
-        print(i)
         # get batch
-        d_words, d_lengths, q_words, q_lengths, c_words, c_lengths, labels = parse_batch(batch)
+        d_words, d_pos, d_ner, d_lengths, q_words, q_pos, q_lengths, c_words, c_lengths, labels = parse_batch(batch)
         
         correct_labels += [float(label) for label in labels]
         d_words_all.append(d_words)
@@ -526,33 +551,45 @@ def eval_epoch(debug=False):
         
         # eval
         with torch.no_grad():
-            outputs = model(d_words, d_lengths, q_words, q_lengths, c_words, c_lengths)
+            outputs = model(d_words, d_pos, d_ner, d_lengths, q_words, q_pos, q_lengths, c_words, c_lengths)
             prediction += [float(output) for output in outputs]
         
             loss = criterion(outputs, labels)
             # record losses and accuracies
             epoch_losses.append(loss.item())
-            accu = get_accuaracy(outputs, labels)
-            epoch_accus.append(accu.item())
-                
+            correct_num = get_accuaracy(outputs, labels)
+            epoch_accus += correct_num.item()
+    '''
     if debug:
+        print(prediction)
+        print(correct_labels)
+        print(prediction.shape)
+        print(correct_labels.shape)
+
+        assert 1 == 0
+        
         temp_d = d_words_all[0]
         temp_q = q_words_all[0]
 
+        print(temp_d.shape)
+        print(temp_q.shape)
+
         for j in range(len(val_iter)):
-            if d_words_all[j]!=temp_d:  
+            print(j)
+            print(d_words_all[j].shape)
+            if (d_words_all[j] == temp_d).sum() != len(temp_d):  
                 writer.write('Passage: %s\n' % d_words_all[j])
                 temp_d = d_words_all[j]
                 
-            if q_words_all[j]!=temp_q:
+            if (q_words_all[j] == temp_q).sum() != len(temp_q):
                 writer.write('Questions: %s\n' % q_words_all[j])
                 temp_q = q_words_all[j]
             # choice with '*' means answered correctly
-            writer.write('*' if prediction[j]==correct_labels[j] else ' ')
+            writer.write('*' if prediction[j] == correct_labels[j] else ' ')
             writer.write('%s \n' % c_words_all[j])
+    '''
 
-             
-    accu_avg = np.mean(np.array(epoch_accus))
+    accu_avg = epoch_accus / len(val)
     loss_avg = np.mean(np.array(epoch_losses))
     
     return accu_avg, loss_avg
@@ -599,6 +636,6 @@ plt.plot(train_accs, color='green', label='Training accuracy')
 plt.plot(eval_accs, color='red', label='Eval accuracy')
 plt.xlabel('Iteration times')
 plt.ylabel('Rate')
-plt.show()
+plt.savefig("result_analysis.png")
 
 

@@ -35,6 +35,8 @@ embed_dim = 300
 embed_dim_pos = 12
 embed_dim_ner = 8
 embed_dim_value = 1
+embed_dim_rel_p_q = 10
+embed_dim_rel_p_c = 10
 # embed_from = "glove.840B.300d"
 hidden_size = 96
 num_layers = 1
@@ -73,7 +75,6 @@ def tokenizer(text):
     return text.split(" ")
 
 def to_numeric(tf_batch, tf_lens):
-    
     for i in range(len(tf_batch)):
         for j in range(len(tf_batch[0])):
             if tf_batch[i][j] == '<pad>':
@@ -92,6 +93,8 @@ IN_C = data.Field(sequential=True, use_vocab=False, include_lengths=True, postpr
 LEMMA_IN_Q = data.Field(sequential=True, use_vocab=False, include_lengths=True, postprocessing=to_numeric)
 LEMMA_IN_C = data.Field(sequential=True, use_vocab=False, include_lengths=True, postprocessing=to_numeric)
 TF = data.Field(sequential=True, use_vocab=False, include_lengths=True, postprocessing=to_numeric)
+REL_P_Q = data.ReversibleField(sequential=True, lower=False, include_lengths=True)
+REL_P_C = data.ReversibleField(sequential=True, lower=False, include_lengths=True)
 
 train, val, test = data.TabularDataset.splits(
     path=data_dir, train=train_fname,
@@ -107,7 +110,9 @@ train, val, test = data.TabularDataset.splits(
             'in_c': ('in_c', IN_C),
             'lemma_in_q': ('lemma_in_q', LEMMA_IN_Q),
             'lemma_in_c': ('lemma_in_c', LEMMA_IN_C),
-            'tf': ('tf', TF)
+            'tf': ('tf', TF),
+            'p_q_relation': ('p_q_relation', REL_P_Q),
+            'p_c_relation': ('p_c_relation', REL_P_C)
            })
 
 print('train: %d, val: %d, test: %d' % (len(train), len(val), len(test)))
@@ -130,7 +135,9 @@ combined = data.TabularDataset(
             'in_c': ('in_c', IN_C),
             'lemma_in_q': ('lemma_in_q', LEMMA_IN_Q),
             'lemma_in_c': ('lemma_in_c', LEMMA_IN_C),
-            'tf': ('tf', TF)
+            'tf': ('tf', TF),
+            'p_q_relation': ('p_q_relation', REL_P_Q),
+            'p_c_relation': ('p_c_relation', REL_P_C)
            })
 
 # specify the path to the localy saved vectors
@@ -138,14 +145,16 @@ vec = torchtext.vocab.Vectors('glove.840B.300d.txt', data_dir)
 TEXT.build_vocab(combined, vectors=vec)
 POS.build_vocab(combined)
 NER.build_vocab(combined)
+REL_P_Q.build_vocab(combined)
+REL_P_C.build_vocab(combined)
 
 print('vocab size: %d' % len(TEXT.vocab))
 print('pos size: %d' % len(POS.vocab))
 print('ner size: %d' % len(NER.vocab))
-
+print('rel_p_q size: %d' % len(REL_P_Q.vocab))
+print('rel_p_c size: %d' % len(REL_P_C.vocab))
 
 # In[58]:
-
 
 train_iter, val_iter, test_iter = data.Iterator.splits(
         (train, val, test), batch_sizes=(batch_size_train, batch_size_eval, batch_size_eval), \
@@ -173,7 +182,15 @@ embedding_ner.weight.data.normal_(0, 0.1)
 #embedding_ner.weight.requires_grad=False
 embedding_ner = embedding_ner.to(device)
 
+embedding_rel_p_q = nn.Embedding(len(REL_P_Q.vocab), embed_dim_rel_p_q)
+embedding_rel_p_q.weight.data.normal_(0, 0.1)
+#embedding_pos.weight.requires_grad=False
+embedding_rel_p_q = embedding_rel_p_q.to(device)
 
+embedding_rel_p_c = nn.Embedding(len(REL_P_C.vocab), embed_dim_rel_p_c)
+embedding_rel_p_c.weight.data.normal_(0, 0.1)
+#embedding_pos.weight.requires_grad=False
+embedding_rel_p_c = embedding_rel_p_c.to(device)
 
 # In[60]:
 
@@ -370,14 +387,17 @@ class Bilinear(nn.Module):
 
 
 class TriAn(nn.Module):
-    def __init__(self, embedding, embedding_pos, embedding_ner):
+    def __init__(self, embedding, embedding_pos, embedding_ner, embedding_rel_p_q, embedding_rel_p_c):
         super(TriAn, self).__init__()
         self.embedding = embedding
         self.embedding_pos = embedding_pos
         self.embedding_ner = embedding_ner
+        self.embedding_rel_p_q = embedding_rel_p_q
+        self.embedding_rel_p_c = embedding_rel_p_c
         
-        self.d_rnn = BLSTM(embed_dim * 2 + embed_dim_pos + embed_dim_ner + embed_dim_value * 5, hidden_size, num_layers, rnn_dropout_rate)
-        self.q_rnn = BLSTM(embed_dim + embed_dim_pos,     hidden_size, num_layers, rnn_dropout_rate)
+        self.d_rnn = BLSTM(embed_dim * 2 + embed_dim_pos + embed_dim_ner + embed_dim_rel_p_q + embed_dim_rel_p_c + \
+            embed_dim_value * 5, hidden_size, num_layers, rnn_dropout_rate)
+        self.q_rnn = BLSTM(embed_dim + embed_dim_pos, hidden_size, num_layers, rnn_dropout_rate)
         self.c_rnn = BLSTM(embed_dim * 3, hidden_size, num_layers, rnn_dropout_rate)
         
         self.embed_dropout = nn.Dropout(embed_dropout_rate)
@@ -396,7 +416,7 @@ class TriAn(nn.Module):
         self.sigmoid = nn.Sigmoid()
     
     def forward(self, d_words, d_pos, d_ner, d_lengths, q_words, q_pos, q_lengths, c_words, c_lengths, \
-        in_q, in_c, lemma_in_q, lemma_in_c, tf):
+        in_q, in_c, lemma_in_q, lemma_in_c, tf, p_q_relation, p_c_relation):
         # embed inputs
         d_embed, q_embed, c_embed = self.embedding(d_words), self.embedding(q_words), self.embedding(c_words)
         d_embed, q_embed, c_embed = self.embed_dropout(d_embed), self.embed_dropout(q_embed),self.embed_dropout(c_embed)
@@ -404,6 +424,9 @@ class TriAn(nn.Module):
         d_pos_embed, d_ner_embed, q_pos_embed = self.embedding_pos(d_pos), self.embedding_ner(d_ner), self.embedding_pos(q_pos) 
         d_pos_embed, d_ner_embed, q_pos_embed = self.embed_dropout(d_pos_embed), self.embed_dropout(d_ner_embed),self.embed_dropout(q_pos_embed) 
         
+        p_q_rel_embed, p_c_rel_embed = self.embedding_rel_p_q(p_q_relation), self.embedding_rel_p_c(p_c_relation)
+        p_q_rel_embed, p_c_rel_embed = self.embed_dropout(p_q_rel_embed), self.embed_dropout(p_c_rel_embed)
+
         # get masks
         d_mask = lengths_to_mask(d_lengths)
         q_mask = lengths_to_mask(q_lengths)
@@ -415,8 +438,8 @@ class TriAn(nn.Module):
         c_on_d_contexts = self.embed_dropout(self.c_on_d_attn(c_embed, d_embed, d_mask))
         
         # form final inputs for rnns
-        d_rnn_inputs = torch.cat([d_embed, d_on_q_contexts, d_pos_embed, d_ner_embed, in_q, in_c, \
-            lemma_in_q, lemma_in_c, tf], dim=2)
+        d_rnn_inputs = torch.cat([d_embed, d_on_q_contexts, d_pos_embed, d_ner_embed, \
+            p_q_rel_embed, p_c_rel_embed, in_q, in_c, lemma_in_q, lemma_in_c, tf], dim=2)
         q_rnn_inputs = torch.cat([q_embed, q_pos_embed], dim=2)
         c_rnn_inputs = torch.cat([c_embed, c_on_q_contexts, c_on_d_contexts], dim=2)
         
@@ -440,7 +463,7 @@ class TriAn(nn.Module):
 # In[68]:
 
 
-model = TriAn(embedding, embedding_pos, embedding_ner).to(device)
+model = TriAn(embedding, embedding_pos, embedding_ner, embedding_rel_p_q, embedding_rel_p_c).to(device)
 
 criterion = nn.BCELoss().to(device)
 optimizer = optim.Adamax(model.parameters(), lr=lr, weight_decay=0)
@@ -474,6 +497,8 @@ def parse_batch(batch):
     lemma_in_q = batch.lemma_in_q[0].unsqueeze(dim=2).float()
     lemma_in_c = batch.lemma_in_c[0].unsqueeze(dim=2).float()
     tf = batch.tf[0].unsqueeze(dim=2).float()
+    p_q_relation = batch.p_q_relation[0]
+    p_c_relation = batch.p_c_relation[0]
     
     d_words, d_lengths = torch.transpose(d_words, 0, 1), d_lengths
     q_words, q_lengths = torch.transpose(q_words, 0, 1), q_lengths
@@ -485,11 +510,14 @@ def parse_batch(batch):
     lemma_in_q = torch.transpose(lemma_in_q, 0, 1)
     lemma_in_c = torch.transpose(lemma_in_c, 0, 1)
     tf = torch.transpose(tf, 0, 1)
+
+    p_q_relation = torch.transpose(p_q_relation, 0, 1)
+    p_c_relation = torch.transpose(p_c_relation, 0, 1)
     
     labels = batch.label.float()
     
     return d_words, d_pos, d_ner, d_lengths, q_words, q_pos, q_lengths, c_words, c_lengths, \
-        labels, in_q, in_c, lemma_in_q, lemma_in_c, tf
+        labels, in_q, in_c, lemma_in_q, lemma_in_c, tf, p_q_relation, p_c_relation
 
 
 # In[71]:
@@ -505,12 +533,12 @@ def train_epoch():
     for i, batch in enumerate(train_iter):
         # get batch
         d_words, d_pos, d_ner, d_lengths, q_words, q_pos, q_lengths, c_words, c_lengths, \
-            labels, in_q, in_c, lemma_in_q, lemma_in_c, tf = parse_batch(batch)
+            labels, in_q, in_c, lemma_in_q, lemma_in_c, tf, p_q_relation, p_c_relation = parse_batch(batch)
         
         # get outputs and loss
         optimizer.zero_grad()
         outputs = model(d_words, d_pos, d_ner, d_lengths, q_words, q_pos, q_lengths, c_words, c_lengths, \
-            in_q, in_c, lemma_in_q, lemma_in_c, tf)
+            in_q, in_c, lemma_in_q, lemma_in_c, tf, p_q_relation, p_c_relation)
         loss = criterion(outputs, labels)
         
         # update model
@@ -555,7 +583,7 @@ def eval_epoch(debug=False):
     for i, batch in enumerate(val_iter):
         # get batch
         d_words, d_pos, d_ner, d_lengths, q_words, q_pos, q_lengths, c_words, c_lengths, \
-            labels, in_q, in_c, lemma_in_q, lemma_in_c, tf = parse_batch(batch)
+            labels, in_q, in_c, lemma_in_q, lemma_in_c, tf, p_q_relation, p_c_relation = parse_batch(batch)
         
         correct_labels += [float(label) for label in labels]
         d_words_all.append(d_words)
@@ -565,7 +593,7 @@ def eval_epoch(debug=False):
         # eval
         with torch.no_grad():
             outputs = model(d_words, d_pos, d_ner, d_lengths, q_words, q_pos, \
-                q_lengths, c_words, c_lengths, in_q, in_c, lemma_in_q, lemma_in_c, tf)
+                q_lengths, c_words, c_lengths, in_q, in_c, lemma_in_q, lemma_in_c, tf, p_q_relation, p_c_relation)
             prediction += [float(output) for output in outputs]
         
             loss = criterion(outputs, labels)

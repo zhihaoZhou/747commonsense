@@ -483,11 +483,23 @@ scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[10,15], gamma=
 # In[69]:
 
 
-def get_accuaracy(outputs, labels):
-    preds = (outputs > 0.5).float()
-    correct_num = torch.sum((preds == labels).float())
-    return correct_num
-
+def get_accuaracy(outputs, labels, is_train):
+    if is_train:
+        preds = (outputs > 0.5).float()
+        correct_num = torch.sum((preds == labels).float())
+        return correct_num
+    else:
+        outputs = outputs.cpu().numpy()
+        preds = []
+        for i in range(len(outputs)):
+            if i % 2 == 0:
+                if outputs[i] > outputs[i+1]:
+                    preds += [1, 0]
+                else:
+                    preds += [0, 1]
+        preds = np.array(preds)
+        labels = labels.cpu().numpy()
+        return np.sum((preds == labels).astype(float))
 
 # In[70]:
 

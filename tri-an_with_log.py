@@ -483,7 +483,7 @@ scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[10,15], gamma=
 # In[69]:
 
 
-def get_accuaracy(outputs, labels, is_train):
+def get_accuaracy(outputs, labels, is_train=False):
     if is_train:
         preds = (outputs > 0.5).float()
         correct_num = torch.sum((preds == labels).float())
@@ -570,7 +570,7 @@ def train_epoch():
         
         # record losses and accuracies
         epoch_losses.append(loss.item())
-        correct_num = get_accuaracy(outputs, labels)
+        correct_num = get_accuaracy(outputs, labels, is_train=True)
         epoch_accus += correct_num.item()
 #         break
     

@@ -168,7 +168,7 @@ train_iter, val_iter, test_iter = data.Iterator.splits(
     sort_key=lambda x: len(x.d_words), device=device, sort_within_batch=False, repeat=False)
 '''
 train_iter = data.BucketIterator(dataset=train, batch_size=batch_size_train, sort_key=lambda x: len(x.d_words), \
-    device=device, sort_within_batch=False)
+    device=device, shuffle=True, sort_within_batch=False)
 
 val_iter = data.Iterator(dataset=val, batch_size=batch_size_eval, sort_key=lambda x: len(x.d_words), \
     train=False, shuffle=False, sort_within_batch=False, device=device)

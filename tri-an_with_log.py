@@ -3,7 +3,7 @@
 
 # In[53]:
 
-
+import random
 import numpy as np
 import torch
 import torch.optim as optim
@@ -22,7 +22,16 @@ USE_CUDA = torch.cuda.is_available()
 device = torch.device("cuda" if USE_CUDA else "cpu")
 print("Use CUDA:", USE_CUDA)
 
+seed = 1234
 
+# Set the random seed manually for reproducibility.
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
+torch.manual_seed(seed)
+if torch.cuda.is_available():
+    torch.cuda.manual_seed(seed)
+np.random.seed(seed)
+random.seed(seed)
 # # Hyperparameters
 
 # In[54]:
@@ -31,12 +40,12 @@ print("Use CUDA:", USE_CUDA)
 num_epoch = 60
 batch_size_train = 32
 batch_size_eval = 256
+batch_size_test = 256
 embed_dim = 300
 embed_dim_pos = 12
 embed_dim_ner = 8
 embed_dim_value = 1
-embed_dim_rel_p_q = 10
-embed_dim_rel_p_c = 10
+embed_dim_rel = 10
 # embed_from = "glove.840B.300d"
 hidden_size = 96
 num_layers = 1
@@ -93,8 +102,7 @@ IN_C = data.Field(sequential=True, use_vocab=False, include_lengths=True, postpr
 LEMMA_IN_Q = data.Field(sequential=True, use_vocab=False, include_lengths=True, postprocessing=to_numeric)
 LEMMA_IN_C = data.Field(sequential=True, use_vocab=False, include_lengths=True, postprocessing=to_numeric)
 TF = data.Field(sequential=True, use_vocab=False, include_lengths=True, postprocessing=to_numeric)
-REL_P_Q = data.ReversibleField(sequential=True, lower=False, include_lengths=True)
-REL_P_C = data.ReversibleField(sequential=True, lower=False, include_lengths=True)
+REL = data.ReversibleField(sequential=True, lower=False, include_lengths=True)
 
 train, val, test = data.TabularDataset.splits(
     path=data_dir, train=train_fname,
@@ -111,8 +119,8 @@ train, val, test = data.TabularDataset.splits(
             'lemma_in_q': ('lemma_in_q', LEMMA_IN_Q),
             'lemma_in_c': ('lemma_in_c', LEMMA_IN_C),
             'tf': ('tf', TF),
-            'p_q_relation': ('p_q_relation', REL_P_Q),
-            'p_c_relation': ('p_c_relation', REL_P_C)
+            'p_q_relation': ('p_q_relation', REL),
+            'p_c_relation': ('p_c_relation', REL)
            })
 
 print('train: %d, val: %d, test: %d' % (len(train), len(val), len(test)))
@@ -136,8 +144,8 @@ combined = data.TabularDataset(
             'lemma_in_q': ('lemma_in_q', LEMMA_IN_Q),
             'lemma_in_c': ('lemma_in_c', LEMMA_IN_C),
             'tf': ('tf', TF),
-            'p_q_relation': ('p_q_relation', REL_P_Q),
-            'p_c_relation': ('p_c_relation', REL_P_C)
+            'p_q_relation': ('p_q_relation', REL),
+            'p_c_relation': ('p_c_relation', REL)
            })
 
 # specify the path to the localy saved vectors
@@ -145,24 +153,30 @@ vec = torchtext.vocab.Vectors('glove.840B.300d.txt', data_dir)
 TEXT.build_vocab(combined, vectors=vec)
 POS.build_vocab(combined)
 NER.build_vocab(combined)
-REL_P_Q.build_vocab(combined)
-REL_P_C.build_vocab(combined)
+REL.build_vocab(combined)
 
 print('vocab size: %d' % len(TEXT.vocab))
 print('pos size: %d' % len(POS.vocab))
 print('ner size: %d' % len(NER.vocab))
-print('rel_p_q size: %d' % len(REL_P_Q.vocab))
-print('rel_p_c size: %d' % len(REL_P_C.vocab))
+print('rel size: %d' % len(REL.vocab))
 
 # In[58]:
 
+'''
 train_iter, val_iter, test_iter = data.Iterator.splits(
         (train, val, test), batch_sizes=(batch_size_train, batch_size_eval, batch_size_eval), \
     sort_key=lambda x: len(x.d_words), device=device, sort_within_batch=False, repeat=False)
+'''
+train_iter = data.BucketIterator(dataset=train, batch_size=batch_size_train, sort_key=lambda x: len(x.d_words), \
+    device=device, sort_within_batch=False)
 
-print('train batches: %d, val batches: %d, test batches: %d' % (len(train_iter),                                                                 len(val_iter), len(test_iter)))
+val_iter = data.Iterator(dataset=val, batch_size=batch_size_eval, sort_key=lambda x: len(x.d_words), \
+    train=False, shuffle=False, sort_within_batch=False, device=device)
 
+test_iter = data.Iterator(dataset=test, batch_size=batch_size_test, sort_key=lambda x: len(x.d_words), \
+    train=False, shuffle=False, sort_within_batch=False, device=device)
 
+print('train batches: %d, val batches: %d, test batches: %d' % (len(train_iter), len(val_iter), len(test_iter)))
 # # Create embedding
 
 # In[59]:
@@ -182,15 +196,10 @@ embedding_ner.weight.data.normal_(0, 0.1)
 #embedding_ner.weight.requires_grad=False
 embedding_ner = embedding_ner.to(device)
 
-embedding_rel_p_q = nn.Embedding(len(REL_P_Q.vocab), embed_dim_rel_p_q)
-embedding_rel_p_q.weight.data.normal_(0, 0.1)
+embedding_rel = nn.Embedding(len(REL.vocab), embed_dim_rel)
+embedding_rel.weight.data.normal_(0, 0.1)
 #embedding_pos.weight.requires_grad=False
-embedding_rel_p_q = embedding_rel_p_q.to(device)
-
-embedding_rel_p_c = nn.Embedding(len(REL_P_C.vocab), embed_dim_rel_p_c)
-embedding_rel_p_c.weight.data.normal_(0, 0.1)
-#embedding_pos.weight.requires_grad=False
-embedding_rel_p_c = embedding_rel_p_c.to(device)
+embedding_rel = embedding_rel.to(device)
 
 # In[60]:
 
@@ -241,7 +250,7 @@ class BLSTM(nn.Module):
         outputs, _ = nn.utils.rnn.pad_packed_sequence(outputs_packed, batch_first=True)
         
         # Reverses sorting. 
-        outputs = torch.zeros_like(outputs)            .scatter_(0, sorted_idx.unsqueeze(1).unsqueeze(1)
+        outputs = torch.zeros_like(outputs).scatter_(0, sorted_idx.unsqueeze(1).unsqueeze(1) \
                       .expand(-1, outputs.shape[1], outputs.shape[2]), outputs)
         outputs = self.rnn_output_dropout(outputs)
         
@@ -387,15 +396,14 @@ class Bilinear(nn.Module):
 
 
 class TriAn(nn.Module):
-    def __init__(self, embedding, embedding_pos, embedding_ner, embedding_rel_p_q, embedding_rel_p_c):
+    def __init__(self, embedding, embedding_pos, embedding_ner, embedding_rel):
         super(TriAn, self).__init__()
         self.embedding = embedding
         self.embedding_pos = embedding_pos
         self.embedding_ner = embedding_ner
-        self.embedding_rel_p_q = embedding_rel_p_q
-        self.embedding_rel_p_c = embedding_rel_p_c
+        self.embedding_rel = embedding_rel
         
-        self.d_rnn = BLSTM(embed_dim * 2 + embed_dim_pos + embed_dim_ner + embed_dim_rel_p_q + embed_dim_rel_p_c + \
+        self.d_rnn = BLSTM(embed_dim * 2 + embed_dim_pos + embed_dim_ner + embed_dim_rel * 2 + \
             embed_dim_value * 5, hidden_size, num_layers, rnn_dropout_rate)
         self.q_rnn = BLSTM(embed_dim + embed_dim_pos, hidden_size, num_layers, rnn_dropout_rate)
         self.c_rnn = BLSTM(embed_dim * 3, hidden_size, num_layers, rnn_dropout_rate)
@@ -424,7 +432,7 @@ class TriAn(nn.Module):
         d_pos_embed, d_ner_embed, q_pos_embed = self.embedding_pos(d_pos), self.embedding_ner(d_ner), self.embedding_pos(q_pos) 
         d_pos_embed, d_ner_embed, q_pos_embed = self.embed_dropout(d_pos_embed), self.embed_dropout(d_ner_embed),self.embed_dropout(q_pos_embed) 
         
-        p_q_rel_embed, p_c_rel_embed = self.embedding_rel_p_q(p_q_relation), self.embedding_rel_p_c(p_c_relation)
+        p_q_rel_embed, p_c_rel_embed = self.embedding_rel(p_q_relation), self.embedding_rel(p_c_relation)
         p_q_rel_embed, p_c_rel_embed = self.embed_dropout(p_q_rel_embed), self.embed_dropout(p_c_rel_embed)
 
         # get masks
@@ -463,7 +471,7 @@ class TriAn(nn.Module):
 # In[68]:
 
 
-model = TriAn(embedding, embedding_pos, embedding_ner, embedding_rel_p_q, embedding_rel_p_c).to(device)
+model = TriAn(embedding, embedding_pos, embedding_ner, embedding_rel).to(device)
 
 criterion = nn.BCELoss().to(device)
 optimizer = optim.Adamax(model.parameters(), lr=lr, weight_decay=0)

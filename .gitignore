@@ -1,2 +1,5 @@
-
-.idea/workspace.xml
+.idea
+data
+*.tar
+preprocessed
+__pycache__

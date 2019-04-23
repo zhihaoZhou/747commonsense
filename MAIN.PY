@@ -67,7 +67,7 @@ if __name__ == '__main__':
     train_util = TrainUtil(data_util.train_iter, data_util.val_iter, model,
                            optimizer, criterion, scheduler, device, config)
 
-    train_util.train_epoch()
+    train_util.train_model()
 
 
 

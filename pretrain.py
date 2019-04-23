@@ -19,7 +19,7 @@ class Config:
     data_dir = 'pretrain_data'
     train_f = 'lm.train'
     dev_f = 'lm.dev'
-    file_path = 'pretrain_data/raw_stories.txt'
+    file_path = 'pretrain_data'
     vectors = "glove.840B.300d"
 
 

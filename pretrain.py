@@ -76,10 +76,11 @@ def train_epoch():
         decoded, _, _ = model(x)
 
 
-        # print('x', x.shape)
-        # print('decoded', decoded.shape)
-        # raise Exception()
-
+        print('decoded', decoded.shape)
+        print('y', y.shape)
+        decoded.view(-1, vocab_size)
+        y.view(-1)
+        raise Exception()
 
         loss = criterion(decoded.view(-1, vocab_size), y.view(-1))
         loss.backward()

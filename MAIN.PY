@@ -49,7 +49,8 @@ if __name__ == '__main__':
     train_fname = 'train-trial-combined-data-processed.json'
     dev_fname = 'dev-data-processed.json'
     test_fname = 'test-data-processed.json'
-    embed_fname = 'glove.840B.300d.txt'
+    # embed_fname = 'glove.840B.300d.txt'
+    embed_fname = 'crawl-300d-2M-subword.vec'
 
     data_util = DataUtil(data_dir, combined_fname, train_fname, dev_fname,
                          test_fname, embed_fname, config, device)

@@ -93,7 +93,8 @@ def eval_epoch():
 
         with torch.no_grad():
             decoded, _, _ = model(x)
-            loss = criterion(decoded.view(-1, vocab_size), y.view(-1))
+            loss = criterion(decoded.view(-1, vocab_size).contiguous(),
+                             y.view(-1).contiguous())
             epoch_losses.append(loss.item())
             break
     return 2 ** np.mean(epoch_losses)

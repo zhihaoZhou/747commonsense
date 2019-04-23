@@ -62,7 +62,7 @@ embedding = embedding.to(device)
 model = LM(vocab_size, config.embed_dim, config.hidden_dim, embedding, config.dropout)
 model = model.to(device)
 criterion = nn.CrossEntropyLoss().to(device)
-optimizer = optim.sgd(model.parameters(), lr=config.lr)
+optimizer = optim.SGD(model.parameters(), lr=config.lr)
 
 
 def train_epoch():

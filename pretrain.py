@@ -50,8 +50,8 @@ if __name__ == '__main__':
 
     # define model
     embedding = nn.Embedding(len(TEXT.vocab), config.embed_dim)
-    embedding.weight.data.copy_(TEXT.vocab.vectors)
-    embedding.weight.requires_grad = False
+    # embedding.weight.data.copy_(TEXT.vocab.vectors)
+    # embedding.weight.requires_grad = False
     embedding = embedding.to(device)
 
     model = LM(len(TEXT.vocab), config.embed_dim, config.hidden_dim, embedding, config.dropout)

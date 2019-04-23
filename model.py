@@ -9,6 +9,7 @@
 # In[61]:
 import torch
 import torch.nn as nn
+from torch.autograd import Variable
 
 
 class BLSTM(nn.Module):
@@ -245,3 +246,45 @@ class TriAn(nn.Module):
 
         logits = dWc + qWc
         return self.sigmoid(logits)
+
+
+class LM(nn.Module):
+    def __init__(self, ntoken, ninp, nhid, embedding, dropout):
+        super(LM, self).__init__()
+        self.nhid = nhid
+        self.encoder = embedding
+        self.rnn = nn.LSTM(ninp, nhid, batch_first=True)
+        self.decoder = nn.Linear(nhid, ntoken)
+        self.drop = nn.Dropout(dropout)
+        self.h0 = Variable(torch.FloatTensor(1, 1, nhid).uniform_(-0.1, 0.1), requires_grad=True)
+        self.c0 = Variable(torch.FloatTensor(1, 1, nhid).uniform_(-0.1, 0.1), requires_grad=True)
+        self.init_weights()
+
+        # tie weights
+        self.decoder.weight = self.embedding.weight
+
+    def init_weights(self):
+        initrange = 0.1
+        self.encoder.weight.data.uniform_(-initrange, initrange)
+        self.decoder.bias.data.fill_(0)
+        self.decoder.weight.data.uniform_(-initrange, initrange)
+
+    def forward(self, inputs, hidden=None):
+        """
+
+        :param inputs: (batch_size, max_len)
+        :param hidden: ((1, batch_size, nhid), (1, batch_size, nhid))
+        :return:
+        """
+        if not hidden:
+            hidden = self.init_hidden(inputs.shape[0])
+        emb = self.drop(self.encoder(inputs))
+        outputs, hidden = self.rnn(emb, hidden)
+        outputs = self.drop(outputs)
+        decoded = self.decoder(outputs)
+        return decoded, outputs, hidden
+
+    def init_hidden(self, batch_size):
+        h0 = self.h0.expand(1, batch_size, self.nhid)
+        c0 = self.c0.expand(1, batch_size, self.nhid)
+        return h0, c0

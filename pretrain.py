@@ -1,8 +1,15 @@
 import spacy
 from spacy.symbols import ORTH
+import torch
+import torch.nn as nn
 import torchtext
 from torchtext import data, datasets
 import os
+from model import LM
+
+USE_CUDA = torch.cuda.is_available()
+device = torch.device("cuda" if USE_CUDA else "cpu")
+print("Use CUDA:", USE_CUDA)
 
 
 my_tok = spacy.load('en')
@@ -14,8 +21,11 @@ def spacy_tok(x):
 
 
 class Config:
-    batch_size = 5
-    bptt_len = 10
+    batch_size = 32
+    bptt_len = 60
+    embed_dim = 300
+    hidden_dim = 512
+    dropout = 0.3
     data_dir = 'pretrain_data'
     train_f = 'lm.train'
     dev_f = 'lm.dev'
@@ -38,11 +48,24 @@ if __name__ == '__main__':
 
     print('train batch num: %d, dev batch num: %d' % (len(train_iter), len(dev_iter)))
 
+    # define model
+    embedding = nn.Embedding(len(TEXT.vocab), config.embed_dim)
+    embedding.weight.data.copy_(TEXT.vocab.vectors)
+    embedding.weight.requires_grad = False
+    embedding = embedding.to(device)
+
+    model = LM(len(TEXT.vocab), config.embed_dim, config.hidden_dim, embedding, config.dropout)
+
     for batch in train_iter:
         x, y = batch.text.transpose(0, 1), batch.target.transpose(0, 1)
-        print(vars(batch).keys())
         print('~' * 80)
         print(x)
         print('~'*80)
         print(y)
+        print('~'*80)
+
+        decoded, outputs, hidden = model(x)
+        print(decoded.shape)
+        print(outputs.shape)
+        print(hidden[0].shape)
         break

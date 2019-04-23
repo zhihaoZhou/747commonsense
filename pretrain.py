@@ -82,7 +82,7 @@ def train_epoch():
         optimizer.step()
 
         epoch_losses.append(loss.item())
-        break
+        # break
     return 2 ** np.mean(epoch_losses)
 
 
@@ -98,7 +98,7 @@ def eval_epoch():
             loss = criterion(decoded.contiguous().view(-1, vocab_size),
                              y.view(-1))
             epoch_losses.append(loss.item())
-            break
+            # break
     return 2 ** np.mean(epoch_losses)
 
 

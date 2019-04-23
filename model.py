@@ -257,8 +257,8 @@ class LM(nn.Module):
         self.rnn = nn.LSTM(ninp, nhid, batch_first=True)
         self.decoder = nn.Linear(nhid, ntoken)
         self.drop = nn.Dropout(dropout)
-        self.h0 = Variable(torch.FloatTensor(1, 1, nhid).uniform_(-0.1, 0.1), requires_grad=True).to(device)
-        self.c0 = Variable(torch.FloatTensor(1, 1, nhid).uniform_(-0.1, 0.1), requires_grad=True).to(device)
+        # self.h0 = Variable(torch.FloatTensor(1, 1, nhid).uniform_(-0.1, 0.1), requires_grad=False).to(device)
+        # self.c0 = Variable(torch.FloatTensor(1, 1, nhid).uniform_(-0.1, 0.1), requires_grad=False).to(device)
         self.init_weights()
 
         # # tie weights
@@ -277,18 +277,21 @@ class LM(nn.Module):
         :param hidden: ((1, batch_size, nhid), (1, batch_size, nhid))
         :return:
         """
-        if not hidden:
-            hidden = self.init_hidden(inputs.shape[0])
+        # if not hidden:
+        #     hidden = self.init_hidden(inputs.shape[0])
 
         emb = self.drop(self.encoder(inputs))
-        outputs, hidden = self.rnn(emb, hidden)
+        if hidden:
+            outputs, hidden = self.rnn(emb, hidden)
+        else:
+            outputs, hidden = self.rnn(emb)
         outputs = self.drop(outputs)
         decoded = self.decoder(outputs)
         return decoded, outputs, hidden
 
-    def init_hidden(self, batch_size):
-        h0 = Variable(self.h0.expand(1, batch_size,
-                                     self.nhid).contiguous().to(self.device), requires_grad=True)
-        c0 = Variable(self.c0.expand(1, batch_size,
-                                     self.nhid).contiguous().to(self.device), requires_grad=True)
-        return h0, c0
+    # def init_hidden(self, batch_size):
+    #     h0 = Variable(self.h0.expand(1, batch_size,
+    #                                  self.nhid).contiguous().to(self.device), requires_grad=True)
+    #     c0 = Variable(self.c0.expand(1, batch_size,
+    #                                  self.nhid).contiguous().to(self.device), requires_grad=True)
+    #     return h0, c0

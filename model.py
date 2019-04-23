@@ -279,21 +279,9 @@ class LM(nn.Module):
         if not hidden:
             hidden = self.init_hidden(inputs.shape[0])
 
-
-        print('inputs', inputs.shape)
-        print('hidden', hidden[0].shape, hidden[1].shape)
-
         emb = self.drop(self.encoder(inputs))
-
-        print('emb', emb.shape)
-
         outputs, hidden = self.rnn(emb, hidden)
-
-        print('outputs', outputs.shape)
-
         outputs = self.drop(outputs)
-
-        print('outputs', outputs.shape)
         decoded = self.decoder(outputs)
         return decoded, outputs, hidden
 

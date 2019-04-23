@@ -76,9 +76,9 @@ def train_epoch():
         decoded, _, _ = model(x)
 
 
-        print('x', x.shape)
-        print('decoded', decoded.shape)
-        raise Exception()
+        # print('x', x.shape)
+        # print('decoded', decoded.shape)
+        # raise Exception()
 
 
         loss = criterion(decoded.view(-1, vocab_size), y.view(-1))

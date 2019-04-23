@@ -287,6 +287,8 @@ class LM(nn.Module):
         return decoded, outputs, hidden
 
     def init_hidden(self, batch_size):
-        h0 = self.h0.expand(1, batch_size, self.nhid).contiguous().to(self.device)
-        c0 = self.c0.expand(1, batch_size, self.nhid).contiguous().to(self.device)
+        h0 = Variable(self.h0.expand(1, batch_size,
+                                     self.nhid).contiguous().to(self.device), requires_grad=True)
+        c0 = Variable(self.c0.expand(1, batch_size,
+                                     self.nhid).contiguous().to(self.device), requires_grad=True)
         return h0, c0

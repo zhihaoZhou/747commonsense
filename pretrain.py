@@ -108,5 +108,3 @@ for epoch in range(config.num_epochs):
     print('epoch %d train_perplex %.4f, dev dev_perplex %.4f' %
           (epoch, train_perplex, dev_perplex))
 
-    print('!!!!!', model.h0[0, 0, :10])
-

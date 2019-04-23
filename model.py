@@ -284,7 +284,13 @@ class LM(nn.Module):
         print('hidden', hidden[0].shape, hidden[1].shape)
 
         emb = self.drop(self.encoder(inputs))
+
+        print('emb', emb.shape)
+
         outputs, hidden = self.rnn(emb, hidden)
+
+        print('!!!!!!!!')
+
         outputs = self.drop(outputs)
         decoded = self.decoder(outputs)
         return decoded, outputs, hidden

@@ -45,8 +45,9 @@ train = datasets.LanguageModelingDataset(os.path.join(config.file_path, config.t
 dev = datasets.LanguageModelingDataset(os.path.join(config.file_path, config.dev_f),
                                        TEXT, newline_eos=False)
 
-TEXT.build_vocab(train)
-# TEXT.build_vocab(train, vectors=config.vectors)
+
+TEXT.build_vocab(train, vectors=config.vectors)
+# TEXT.build_vocab(train)
 train_iter = data.BPTTIterator(train, batch_size=config.batch_size, bptt_len=config.bptt_len)
 dev_iter = data.BPTTIterator(dev, batch_size=config.batch_size, bptt_len=config.bptt_len)
 
@@ -55,9 +56,9 @@ print('train batch num: %d, dev batch num: %d' % (len(train_iter), len(dev_iter)
 # define model
 vocab_size = len(TEXT.vocab)
 embedding = nn.Embedding(vocab_size, config.embed_dim)
-# embedding.weight.data.copy_(TEXT.vocab.vectors)
-# embedding.weight.requires_grad = False
-embedding = embedding.to(device)
+embedding.weight.data.copy_(TEXT.vocab.vectors)
+embedding.weight.requires_grad = False
+embedding = embedding
 
 model = LM(vocab_size, config.embed_dim, config.hidden_dim, embedding, config.dropout)
 model = model.to(device)

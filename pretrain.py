@@ -99,7 +99,7 @@ def eval_epoch():
     return 2 ** np.mean(epoch_losses)
 
 
-for epoch in config.num_epochs:
+for epoch in range(config.num_epochs):
     train_perplex = train_epoch()
     dev_perplex = eval_epoch()
     print('epoch %d train_perplex %.4f, dev dev_perplex %.4f' %

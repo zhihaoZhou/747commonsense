@@ -102,6 +102,7 @@ class TrainUtil:
             epoch_accus += cur_acc * num_examples
             total_num_example += num_examples
             # break
+            print(i)
 
         accu_avg = epoch_accus / total_num_example
         loss_avg = np.mean(np.array(epoch_losses))

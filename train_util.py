@@ -101,7 +101,7 @@ class TrainUtil:
             cur_acc = self.get_acc(outputs, labels, is_train=True)
             epoch_accus += cur_acc * num_examples
             total_num_example += num_examples
-            break
+            # break
 
         accu_avg = epoch_accus / total_num_example
         loss_avg = np.mean(np.array(epoch_losses))
@@ -148,7 +148,7 @@ class TrainUtil:
                 cur_acc = self.get_acc(outputs, labels, is_train=False)
                 epoch_accus += cur_acc * num_examples
                 total_num_example += num_examples
-                break
+                # break
 
         accu_avg = epoch_accus / total_num_example
         loss_avg = np.mean(np.array(epoch_losses))
@@ -156,7 +156,6 @@ class TrainUtil:
         return accu_avg, loss_avg
 
     def train_model(self):
-        print('!!!!!')
         # writer_acc = open('data/analysis_accs.log', 'w', encoding='utf-8')
 
         # training loop

@@ -29,7 +29,7 @@ if __name__ == '__main__':
 
     for batch in train_iter:
         x, y = batch.text.transpose(0, 1), batch.target.transpose(0, 1)
-        print(batch.keys())
+        print(vars(batch).keys())
         print('~' * 80)
         print(x)
         print('~'*80)

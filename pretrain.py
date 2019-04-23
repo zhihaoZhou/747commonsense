@@ -36,7 +36,7 @@ if __name__ == '__main__':
     train_iter = data.BPTTIterator(train, batch_size=config.batch_size, bptt_len=config.bptt_len)
     dev_iter = data.BPTTIterator(dev, batch_size=config.batch_size, bptt_len=config.bptt_len)
 
-    print(len(train_iter), len(dev_iter))
+    print('train batch num: %d, dev batch num: %d' % (len(train_iter), len(dev_iter)))
 
     for batch in train_iter:
         x, y = batch.text.transpose(0, 1), batch.target.transpose(0, 1)

@@ -83,7 +83,6 @@ class DataUtil:
                     'p_c_relation': ('p_c_relation', REL)
                    })
 
-        # specify the path to the locally saved vectors
         TEXT.build_vocab(combined, vectors=config.vectors)
         POS.build_vocab(combined)
         NER.build_vocab(combined)

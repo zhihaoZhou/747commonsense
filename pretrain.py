@@ -48,8 +48,8 @@ dev = datasets.LanguageModelingDataset(os.path.join(config.file_path, config.dev
 
 TEXT.build_vocab(train, vectors=config.vectors)
 # TEXT.build_vocab(train)
-train_iter = data.BPTTIterator(train, batch_size=config.batch_size, bptt_len=config.bptt_len)
-dev_iter = data.BPTTIterator(dev, batch_size=config.batch_size, bptt_len=config.bptt_len)
+train_iter = data.BPTTIterator(train, batch_size=config.batch_size, bptt_len=config.bptt_len, repeat=False)
+dev_iter = data.BPTTIterator(dev, batch_size=config.batch_size, bptt_len=config.bptt_len, repeat=False)
 
 print('train batch num: %d, dev batch num: %d' % (len(train_iter), len(dev_iter)))
 

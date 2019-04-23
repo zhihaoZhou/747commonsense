@@ -103,12 +103,10 @@ def eval_epoch():
 
 
 for epoch in range(config.num_epochs):
-    print('!!!!!', model.h0[0, 0, :10])
     train_perplex = train_epoch()
     dev_perplex = eval_epoch()
     print('epoch %d train_perplex %.4f, dev dev_perplex %.4f' %
           (epoch, train_perplex, dev_perplex))
 
     print('!!!!!', model.h0[0, 0, :10])
-    break
 

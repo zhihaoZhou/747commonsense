@@ -261,7 +261,7 @@ class LM(nn.Module):
         self.init_weights()
 
         # tie weights
-        self.decoder.weight = self.embedding.weight
+        self.decoder.weight = self.encoder.weight
 
     def init_weights(self):
         initrange = 0.1

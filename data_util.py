@@ -97,15 +97,16 @@ class DataUtil:
 
         self.train_iter = data.BucketIterator(dataset=train, batch_size=config.batch_size_train,
                                               sort_key=lambda x: len(x.d_words), device=device, shuffle=True,
-                                              sort_within_batch=False)
+                                              sort_within_batch=False, repeat=False)
 
         self.val_iter = data.Iterator(dataset=val, batch_size=config.batch_size_eval,
                                       sort_key=lambda x: len(x.d_words),
-                                      train=False, shuffle=False, sort_within_batch=False, device=device)
+                                      train=False, shuffle=False, sort_within_batch=False, device=device,
+                                      repeat=False)
 
         self.test_iter = data.Iterator(dataset=test, batch_size=config.batch_size_test,
                                        sort_key=lambda x: len(x.d_words), train=False, shuffle=False,
-                                       sort_within_batch=False, device=device)
+                                       sort_within_batch=False, device=device, repeat=False)
 
         # # Create embeddings
         embedding = nn.Embedding(len(TEXT.vocab), config.embed_dim)

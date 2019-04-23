@@ -18,7 +18,6 @@ class Config:
     file_path = 'pretrain_data/raw_stories.txt'
 
 
-
 if __name__ == '__main__':
     config = Config()
     TEXT = data.Field(lower=True, tokenize=spacy_tok)
@@ -29,7 +28,8 @@ if __name__ == '__main__':
     train_iter = data.BPTTIterator(train, batch_size=config.batch_size, bptt_len=config.bptt_len)
 
     for batch in train_iter:
-        print(batch.text)
+        x, y = batch.text.transpose(0, 1), batch.target.transpose(0, 1)
+        print(x)
         print('~'*80)
-        print(batch.target)
+        print(y)
         break

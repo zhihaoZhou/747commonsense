@@ -74,6 +74,13 @@ def train_epoch():
 
         optimizer.zero_grad()
         decoded, _, _ = model(x)
+
+
+        print('x', x.shape)
+        print('decoded', decoded.shape)
+        raise Exception()
+
+
         loss = criterion(decoded.view(-1, vocab_size), y.view(-1))
         loss.backward()
         _ = nn.utils.clip_grad_norm_(model.parameters(), config.grad_clipping)

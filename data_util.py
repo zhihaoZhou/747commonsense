@@ -29,7 +29,7 @@ class DataUtil:
 
         return tf_batch
 
-    def __init__(self, data_dir, combined_fname, train_fname, dev_fname, test_fname, embed_fname, config, device):
+    def __init__(self, data_dir, combined_fname, train_fname, dev_fname, test_fname, config, device):
         TEXT = data.ReversibleField(sequential=True, tokenize=self.tokenizer, lower=False, include_lengths=True)
         POS = data.ReversibleField(sequential=True, lower=False, include_lengths=True)
         NER = data.ReversibleField(sequential=True, lower=False, include_lengths=True)
@@ -84,8 +84,7 @@ class DataUtil:
                    })
 
         # specify the path to the locally saved vectors
-        vec = torchtext.vocab.Vectors(embed_fname, data_dir)
-        TEXT.build_vocab(combined, vectors=vec)
+        TEXT.build_vocab(combined, vectors=config.vectors)
         POS.build_vocab(combined)
         NER.build_vocab(combined)
         REL.build_vocab(combined)

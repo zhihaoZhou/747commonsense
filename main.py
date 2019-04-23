@@ -31,7 +31,7 @@ class Config:
     embed_dim_ner = 8
     embed_dim_value = 1
     embed_dim_rel = 10
-    # embed_from = "glove.840B.300d"
+    vectors = "glove.840B.300d"
     hidden_size = 96
     num_layers = 1
     rnn_dropout_rate = 0
@@ -49,11 +49,9 @@ if __name__ == '__main__':
     train_fname = 'train-trial-combined-data-processed.json'
     dev_fname = 'dev-data-processed.json'
     test_fname = 'test-data-processed.json'
-    # embed_fname = 'glove.840B.300d.txt'
-    embed_fname = 'crawl-300d-2M-subword.vec'
 
     data_util = DataUtil(data_dir, combined_fname, train_fname, dev_fname,
-                         test_fname, embed_fname, config, device)
+                         test_fname, config, device)
     print('train batches: %d, val batches: %d, test batches: %d' % (len(data_util.train_iter),
                                                                     len(data_util.val_iter),
                                                                     len(data_util.test_iter)))

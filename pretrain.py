@@ -1,7 +1,9 @@
 import spacy
 from spacy.symbols import ORTH
+import numpy as np
 import torch
 import torch.nn as nn
+import torch.optim as optim
 import torchtext
 from torchtext import data, datasets
 import os
@@ -26,6 +28,9 @@ class Config:
     embed_dim = 300
     hidden_dim = 512
     dropout = 0.3
+    lr = 0.1
+    num_epochs = 20
+    grad_clipping = 10
     data_dir = 'pretrain_data'
     train_f = 'lm.train'
     dev_f = 'lm.dev'
@@ -33,39 +38,70 @@ class Config:
     vectors = "glove.840B.300d"
 
 
-if __name__ == '__main__':
-    config = Config()
-    TEXT = data.Field(lower=True, tokenize=spacy_tok)
-    train = datasets.LanguageModelingDataset(os.path.join(config.file_path, config.train_f),
-                                             TEXT, newline_eos=False)
-    dev = datasets.LanguageModelingDataset(os.path.join(config.file_path, config.dev_f),
-                                           TEXT, newline_eos=False)
+config = Config()
+TEXT = data.Field(lower=True, tokenize=spacy_tok)
+train = datasets.LanguageModelingDataset(os.path.join(config.file_path, config.train_f),
+                                         TEXT, newline_eos=False)
+dev = datasets.LanguageModelingDataset(os.path.join(config.file_path, config.dev_f),
+                                       TEXT, newline_eos=False)
 
-    TEXT.build_vocab(train)
-    # TEXT.build_vocab(train, vectors=config.vectors)
-    train_iter = data.BPTTIterator(train, batch_size=config.batch_size, bptt_len=config.bptt_len)
-    dev_iter = data.BPTTIterator(dev, batch_size=config.batch_size, bptt_len=config.bptt_len)
+TEXT.build_vocab(train)
+# TEXT.build_vocab(train, vectors=config.vectors)
+train_iter = data.BPTTIterator(train, batch_size=config.batch_size, bptt_len=config.bptt_len)
+dev_iter = data.BPTTIterator(dev, batch_size=config.batch_size, bptt_len=config.bptt_len)
 
-    print('train batch num: %d, dev batch num: %d' % (len(train_iter), len(dev_iter)))
+print('train batch num: %d, dev batch num: %d' % (len(train_iter), len(dev_iter)))
 
-    # define model
-    embedding = nn.Embedding(len(TEXT.vocab), config.embed_dim)
-    # embedding.weight.data.copy_(TEXT.vocab.vectors)
-    # embedding.weight.requires_grad = False
-    embedding = embedding.to(device)
+# define model
+vocab_size = len(TEXT.vocab)
+embedding = nn.Embedding(vocab_size, config.embed_dim)
+# embedding.weight.data.copy_(TEXT.vocab.vectors)
+# embedding.weight.requires_grad = False
+embedding = embedding.to(device)
 
-    model = LM(len(TEXT.vocab), config.embed_dim, config.hidden_dim, embedding, config.dropout)
+model = LM(vocab_size, config.embed_dim, config.hidden_dim, embedding, config.dropout)
+model = model.to(device)
+criterion = nn.CrossEntropyLoss().to(device)
+optimizer = optim.sgd(model.parameters(), lr=config.lr)
 
+
+def train_epoch():
+    model.train()
+    epoch_losses = []
     for batch in train_iter:
         x, y = batch.text.transpose(0, 1), batch.target.transpose(0, 1)
-        print('~' * 80)
-        print(x)
-        print('~'*80)
-        print(y)
-        print('~'*80)
+        x, y = x.to(device), y.to(device)
 
-        decoded, outputs, hidden = model(x)
-        print(decoded.shape)
-        print(outputs.shape)
-        print(hidden[0].shape)
+        optimizer.zero_grad()
+        decoded, _, _ = model(x)
+        loss = criterion(decoded.view(-1, vocab_size), y.view(-1))
+        loss.backward()
+        _ = nn.utils.clip_grad_norm_(model.parameters(), config.grad_clipping)
+        optimizer.step()
+
+        epoch_losses.append(loss.item())
         break
+    return 2 ** np.mean(epoch_losses)
+
+
+def eval_epoch():
+    model.eval()
+    epoch_losses = []
+    for batch in dev_iter:
+        x, y = batch.text.transpose(0, 1), batch.target.transpose(0, 1)
+        x, y = x.to(device), y.to(device)
+
+        with torch.no_grad():
+            decoded, _, _ = model(x)
+            loss = criterion(decoded.view(-1, vocab_size), y.view(-1))
+            epoch_losses.append(loss.item())
+            break
+    return 2 ** np.mean(epoch_losses)
+
+
+for epoch in config.num_epochs:
+    train_perplex = train_epoch()
+    dev_perplex = eval_epoch()
+    print('epoch %d train_perplex %.4f, dev dev_perplex %.4f' %
+          (epoch, train_perplex, dev_perplex))
+

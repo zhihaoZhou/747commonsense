@@ -69,20 +69,13 @@ def train_epoch():
     model.train()
     epoch_losses = []
     for batch in train_iter:
-        x, y = batch.text.transpose(0, 1), batch.target.transpose(0, 1)
-        x, y = x.to(device), y.to(device)
+        x, y = batch.text.transpose(0, 1).contiguous().to(device), \
+               batch.target.transpose(0, 1).contiguous().to(device)
 
         optimizer.zero_grad()
         decoded, _, _ = model(x)
 
-
-        # print('decoded', decoded.shape)
-        # print('y', y.shape)
-        # decoded.view(-1, vocab_size)
-        # y.contiguous().view(-1)
-        # raise Exception()
-
-        loss = criterion(decoded.view(-1, vocab_size), y.contiguous().view(-1))
+        loss = criterion(decoded.view(-1, vocab_size), y.view(-1))
         loss.backward()
         _ = nn.utils.clip_grad_norm_(model.parameters(), config.grad_clipping)
         optimizer.step()
@@ -96,8 +89,8 @@ def eval_epoch():
     model.eval()
     epoch_losses = []
     for batch in dev_iter:
-        x, y = batch.text.transpose(0, 1), batch.target.transpose(0, 1)
-        x, y = x.to(device), y.to(device)
+        x, y = batch.text.transpose(0, 1).contiguous().to(device), \
+               batch.target.transpose(0, 1).contiguous().to(device)
 
         with torch.no_grad():
             decoded, _, _ = model(x)

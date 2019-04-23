@@ -260,8 +260,8 @@ class LM(nn.Module):
         self.c0 = Variable(torch.FloatTensor(1, 1, nhid).uniform_(-0.1, 0.1), requires_grad=True)
         self.init_weights()
 
-        # tie weights
-        self.decoder.weight = self.encoder.weight
+        # # tie weights
+        # self.decoder.weight = self.encoder.weight
 
     def init_weights(self):
         initrange = 0.1

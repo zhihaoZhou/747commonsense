@@ -289,9 +289,11 @@ class LM(nn.Module):
 
         outputs, hidden = self.rnn(emb, hidden)
 
-        print('!!!!!!!!')
+        print('outputs', outputs.shape)
 
         outputs = self.drop(outputs)
+
+        print('outputs', outputs.shape)
         decoded = self.decoder(outputs)
         return decoded, outputs, hidden
 

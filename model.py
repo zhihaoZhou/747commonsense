@@ -249,15 +249,15 @@ class TriAn(nn.Module):
 
 
 class LM(nn.Module):
-    def __init__(self, ntoken, ninp, nhid, embedding, dropout):
+    def __init__(self, ntoken, ninp, nhid, embedding, dropout, device):
         super(LM, self).__init__()
         self.nhid = nhid
         self.encoder = embedding
         self.rnn = nn.LSTM(ninp, nhid, batch_first=True)
         self.decoder = nn.Linear(nhid, ntoken)
         self.drop = nn.Dropout(dropout)
-        self.h0 = Variable(torch.FloatTensor(1, 1, nhid).uniform_(-0.1, 0.1), requires_grad=True)
-        self.c0 = Variable(torch.FloatTensor(1, 1, nhid).uniform_(-0.1, 0.1), requires_grad=True)
+        self.h0 = Variable(torch.FloatTensor(1, 1, nhid).uniform_(-0.1, 0.1), requires_grad=True).to(device)
+        self.c0 = Variable(torch.FloatTensor(1, 1, nhid).uniform_(-0.1, 0.1), requires_grad=True).to(device)
         self.init_weights()
 
         # # tie weights

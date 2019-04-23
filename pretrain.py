@@ -60,7 +60,7 @@ embedding.weight.data.copy_(TEXT.vocab.vectors)
 embedding.weight.requires_grad = False
 embedding = embedding
 
-model = LM(vocab_size, config.embed_dim, config.hidden_dim, embedding, config.dropout)
+model = LM(vocab_size, config.embed_dim, config.hidden_dim, embedding, config.dropout, device)
 model = model.to(device)
 criterion = nn.CrossEntropyLoss().to(device)
 optimizer = optim.SGD(model.parameters(), lr=config.lr)

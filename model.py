@@ -251,6 +251,7 @@ class TriAn(nn.Module):
 class LM(nn.Module):
     def __init__(self, ntoken, ninp, nhid, embedding, dropout, device):
         super(LM, self).__init__()
+        self.device = device
         self.nhid = nhid
         self.encoder = embedding
         self.rnn = nn.LSTM(ninp, nhid, batch_first=True)
@@ -286,6 +287,6 @@ class LM(nn.Module):
         return decoded, outputs, hidden
 
     def init_hidden(self, batch_size):
-        h0 = self.h0.expand(1, batch_size, self.nhid)
-        c0 = self.c0.expand(1, batch_size, self.nhid)
+        h0 = self.h0.expand(1, batch_size, self.nhid).contiguous().to(self.device)
+        c0 = self.c0.expand(1, batch_size, self.nhid).contiguous().to(self.device)
         return h0, c0

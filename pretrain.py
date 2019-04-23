@@ -76,13 +76,13 @@ def train_epoch():
         decoded, _, _ = model(x)
 
 
-        print('decoded', decoded.shape)
-        print('y', y.shape)
-        decoded.view(-1, vocab_size)
-        y.view(-1)
-        raise Exception()
+        # print('decoded', decoded.shape)
+        # print('y', y.shape)
+        # decoded.view(-1, vocab_size)
+        # y.contiguous().view(-1)
+        # raise Exception()
 
-        loss = criterion(decoded.view(-1, vocab_size), y.view(-1))
+        loss = criterion(decoded.view(-1, vocab_size), y.contiguous().view(-1))
         loss.backward()
         _ = nn.utils.clip_grad_norm_(model.parameters(), config.grad_clipping)
         optimizer.step()

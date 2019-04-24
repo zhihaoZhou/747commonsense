@@ -149,7 +149,7 @@ def predict():
         last_preds = last_decoded.argmax(1).unsqueeze(1)
         all_preds.append(last_preds)
 
-        for i in range(30):
+        for i in range(60):
             decoded, outputs, hidden = model(last_preds, hidden)
             last_decoded = decoded[:, -1, :]
             last_preds = last_decoded.argmax(1).unsqueeze(1)

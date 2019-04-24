@@ -27,7 +27,7 @@ class Config:
     bptt_len = 60
     embed_dim = 300
     hidden_dim = 512
-    dropout = 0.3
+    dropout = 0
     lr = 10
     num_epochs = 30
     grad_clipping = 10

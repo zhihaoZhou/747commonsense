@@ -40,16 +40,16 @@ class Config:
     is_train = False
 
 
-# config = Config()
-# TEXT = data.Field(lower=True, tokenize=spacy_tok)
-# train = datasets.LanguageModelingDataset(os.path.join(config.file_path, config.train_f),
-#                                          TEXT, newline_eos=False)
-# dev = datasets.LanguageModelingDataset(os.path.join(config.file_path, config.dev_f),
-#                                        TEXT, newline_eos=False)
-#
-#
+config = Config()
+TEXT = data.Field(lower=True, tokenize=spacy_tok)
+train = datasets.LanguageModelingDataset(os.path.join(config.file_path, config.train_f),
+                                         TEXT, newline_eos=False)
+dev = datasets.LanguageModelingDataset(os.path.join(config.file_path, config.dev_f),
+                                       TEXT, newline_eos=False)
+
+
 # TEXT.build_vocab(train, vectors=config.vectors)
-# # TEXT.build_vocab(train)
+TEXT.build_vocab(train)
 # train_iter = data.BPTTIterator(train, batch_size=config.batch_size, bptt_len=config.bptt_len, repeat=False)
 # dev_iter = data.BPTTIterator(dev, batch_size=config.batch_size, bptt_len=config.bptt_len, repeat=False)
 #
@@ -130,5 +130,6 @@ class Config:
 test_sentences = ['I went into my bedroom and flipped the light switch']
 
 test_sentences = [spacy_tok(sent) for sent in test_sentences]
+test_sentences = [[TEXT.vocab.stoi[tok] for tok in sent] for sent in test_sentences]
 
 print(test_sentences)

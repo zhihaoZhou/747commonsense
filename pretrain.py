@@ -29,7 +29,7 @@ class Config:
     hidden_dim = 1024
     dropout = 0.4
     lr = 10
-    num_epochs = 80
+    num_epochs = 60
     grad_clipping = 10
     data_dir = 'pretrain_data'
     train_f = 'lm.train'
@@ -64,7 +64,7 @@ model = LM(vocab_size, config.embed_dim, config.hidden_dim, embedding, config.dr
 model = model.to(device)
 criterion = nn.CrossEntropyLoss().to(device)
 optimizer = optim.SGD(model.parameters(), lr=config.lr)
-scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[40, 60], gamma=0.1)
+scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[30, 50], gamma=0.1)
 
 
 def train_epoch():

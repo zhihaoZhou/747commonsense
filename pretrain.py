@@ -131,7 +131,7 @@ print('loaded best model')
 test_sentences = ['I went into my bedroom and flipped the light switch']
 test_sentences = [spacy_tok(sent) for sent in test_sentences]
 test_sentences = [[TEXT.vocab.stoi[tok] for tok in sent] for sent in test_sentences]
-test_sentences = torch.LongTensor(test_sentences)
+test_sentences = torch.LongTensor(test_sentences).to(device)
 
 print(test_sentences)
 print(test_sentences.shape)

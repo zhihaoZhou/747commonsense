@@ -27,9 +27,8 @@ class Config:
     bptt_len = 60
     embed_dim = 300
     hidden_dim = 1024
-    dropout = 0.3
+    dropout = 0.4
     # lr = 10
-    lr = 30
     num_epochs = 30
     grad_clipping = 10
     data_dir = 'pretrain_data'

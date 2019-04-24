@@ -124,7 +124,7 @@ if config.is_train:
               (epoch, cur_lr, train_perplex, dev_perplex))
     print('best perplex %.4f, best epoch %d' % (best_dev_perplex, best_epoch))
 # load best model
-model.load(torch.load(config.save_path))
+model.load_state_dict(torch.load(config.save_path))
 print('loaded best model')
 
 # see some generations

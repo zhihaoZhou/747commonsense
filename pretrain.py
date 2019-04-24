@@ -158,5 +158,5 @@ def predict():
 
 all_preds = predict().cpu().numpy()
 all_preds = [[TEXT.vocab.itos[idx] for idx in row] for row in all_preds]
-
+print(all_preds)
 

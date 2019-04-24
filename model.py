@@ -248,6 +248,28 @@ class TriAn(nn.Module):
         return self.sigmoid(logits)
 
 
+class LockedDropout(nn.Module):
+    def __init__(self, p=0.5):
+        super().__init__()
+        self.p = p
+
+    def forward(self, x):
+        """
+
+        :param x: (batch_size, seq_len, x_dim)
+        :return:
+        """
+        if not self.training or not self.p:
+            return x
+
+        mask = x.data.new(x.size(0), 1, x.size(2)).bernoulli_(1 - self.p)
+        mask = Variable(mask, requires_grad=False) / (1 - self.p)
+        mask = mask.expand_as(x)
+        masked = mask * x
+
+        return masked
+
+
 class LM(nn.Module):
     def __init__(self, ntoken, ninp, nhid, embedding, dropout, device):
         super(LM, self).__init__()
@@ -256,7 +278,8 @@ class LM(nn.Module):
         self.encoder = embedding
         self.rnn = nn.LSTM(ninp, nhid, batch_first=True)
         self.decoder = nn.Linear(nhid, ntoken)
-        self.drop = nn.Dropout(dropout)
+        self.embed_drop = LockedDropout(dropout)
+        self.output_drop = LockedDropout(dropout)
         # self.h0 = Variable(torch.FloatTensor(1, 1, nhid).uniform_(-0.1, 0.1), requires_grad=False).to(device)
         # self.c0 = Variable(torch.FloatTensor(1, 1, nhid).uniform_(-0.1, 0.1), requires_grad=False).to(device)
         self.init_weights()
@@ -281,12 +304,12 @@ class LM(nn.Module):
         #     hidden = self.init_hidden(inputs.shape[0])
 
         # emb = self.encoder(inputs)
-        emb = self.drop(self.encoder(inputs))
+        emb = self.embed_drop(self.encoder(inputs))
         if hidden:
             outputs, hidden = self.rnn(emb, hidden)
         else:
             outputs, hidden = self.rnn(emb)
-        outputs = self.drop(outputs)
+        outputs = self.output_drop(outputs)
         decoded = self.decoder(outputs)
         return decoded, outputs, hidden
 

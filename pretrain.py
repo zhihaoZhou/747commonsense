@@ -27,9 +27,9 @@ class Config:
     bptt_len = 60
     embed_dim = 300
     hidden_dim = 1024
-    dropout = 0.5
+    dropout = 0.4
     lr = 10
-    num_epochs = 30
+    num_epochs = 80
     grad_clipping = 10
     data_dir = 'pretrain_data'
     train_f = 'lm.train'
@@ -64,9 +64,11 @@ model = LM(vocab_size, config.embed_dim, config.hidden_dim, embedding, config.dr
 model = model.to(device)
 criterion = nn.CrossEntropyLoss().to(device)
 optimizer = optim.SGD(model.parameters(), lr=config.lr)
+scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[40, 60], gamma=0.1)
 
 
 def train_epoch():
+    scheduler.step()
     model.train()
     epoch_losses = []
     for batch in train_iter:
@@ -103,8 +105,9 @@ def eval_epoch():
 
 
 for epoch in range(config.num_epochs):
+    cur_lr = optimizer.param_groups[0]['lr']
     train_perplex = train_epoch()
     dev_perplex = eval_epoch()
-    print('epoch %d train_perplex %.4f, dev dev_perplex %.4f' %
-          (epoch, train_perplex, dev_perplex))
+    print('epoch %d, lr %.5f, train_perplex %.4f, dev dev_perplex %.4f' %
+          (epoch, cur_lr, train_perplex, dev_perplex))
 

@@ -64,7 +64,7 @@ model = LM(vocab_size, config.embed_dim, config.hidden_dim, embedding, config.dr
 model = model.to(device)
 criterion = nn.CrossEntropyLoss().to(device)
 optimizer = optim.SGD(model.parameters(), lr=config.lr)
-scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[25, 40], gamma=0.1)
+scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[30, 45], gamma=0.1)
 
 
 def train_epoch():

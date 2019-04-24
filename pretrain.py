@@ -29,13 +29,14 @@ class Config:
     hidden_dim = 1024
     dropout = 0.4
     lr = 10
-    num_epochs = 60
+    num_epochs = 40
     grad_clipping = 0.5
     data_dir = 'pretrain_data'
     train_f = 'lm.train'
     dev_f = 'lm.dev'
     file_path = 'pretrain_data'
     vectors = "glove.840B.300d"
+    save_path = 'lm.pt'
     is_train = True
 
 
@@ -65,7 +66,7 @@ model = LM(vocab_size, config.embed_dim, config.hidden_dim, embedding, config.dr
 model = model.to(device)
 criterion = nn.CrossEntropyLoss().to(device)
 optimizer = optim.SGD(model.parameters(), lr=config.lr)
-scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[30, 45], gamma=0.1)
+scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[20, 30], gamma=0.1)
 
 
 def train_epoch():
@@ -107,15 +108,20 @@ def eval_epoch():
 
 if config.is_train:
     best_dev_perplex = float('inf')
+    best_epoch = -1
     for epoch in range(config.num_epochs):
         cur_lr = optimizer.param_groups[0]['lr']
         train_perplex = train_epoch()
         dev_perplex = eval_epoch()
 
-        if (dev_perplex < best_dev_perplex):
+        if dev_perplex < best_dev_perplex:
             best_dev_perplex = dev_perplex
+            best_epoch = epoch
+            torch.save(model.state_dict(), config.save_path)
+            print('saved best model')
 
         print('epoch %d, lr %.5f, train_perplex %.4f, dev dev_perplex %.4f' %
               (epoch, cur_lr, train_perplex, dev_perplex))
+    print('best perplex %.4f, best epoch %d' % (best_dev_perplex, best_epoch))
 # else:
 

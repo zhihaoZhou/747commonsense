@@ -137,7 +137,7 @@ test_sentences = [spacy_tok(sent) for sent in test_sentences_raw]
 test_sentences = [[TEXT.vocab.stoi[tok] for tok in sent] for sent in test_sentences]
 test_sentences = torch.LongTensor(test_sentences).to(device)
 
-print('test_sentences', test_sentences.shape, test_sentences)
+# print('test_sentences', test_sentences.shape, test_sentences)
 
 
 def predict():

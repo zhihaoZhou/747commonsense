@@ -280,20 +280,16 @@ class LM(nn.Module):
         self.decoder = nn.Linear(nhid, ntoken)
         self.embed_drop = LockedDropout(dropout)
         self.output_drop = LockedDropout(dropout)
-
-
-        self.h0 = Variable(torch.FloatTensor(1, 1, nhid).uniform_(-0.1, 0.1), requires_grad=False).to(device)
-        self.c0 = Variable(torch.FloatTensor(1, 1, nhid).uniform_(-0.1, 0.1), requires_grad=False).to(device)
-        self.init_weights()
+        # self.init_weights()
 
         # # tie weights
         # self.decoder.weight = self.encoder.weight
 
-    def init_weights(self):
-        initrange = 0.1
-        self.encoder.weight.data.uniform_(-initrange, initrange)
-        self.decoder.bias.data.fill_(0)
-        self.decoder.weight.data.uniform_(-initrange, initrange)
+    # def init_weights(self):
+    #     initrange = 0.1
+    #     self.encoder.weight.data.uniform_(-initrange, initrange)
+    #     self.decoder.bias.data.fill_(0)
+    #     self.decoder.weight.data.uniform_(-initrange, initrange)
 
     def forward(self, inputs, hidden=None):
         """
@@ -302,10 +298,6 @@ class LM(nn.Module):
         :param hidden: ((1, batch_size, nhid), (1, batch_size, nhid))
         :return:
         """
-        if not hidden:
-            hidden = self.init_hidden(inputs.shape[0])
-
-        # emb = self.encoder(inputs)
         emb = self.embed_drop(self.encoder(inputs))
         if hidden:
             outputs, hidden = self.rnn(emb, hidden)
@@ -314,10 +306,3 @@ class LM(nn.Module):
         outputs = self.output_drop(outputs)
         decoded = self.decoder(outputs)
         return decoded, outputs, hidden
-
-    def init_hidden(self, batch_size):
-        h0 = Variable(self.h0.expand(1, batch_size,
-                                     self.nhid).contiguous().to(self.device), requires_grad=True)
-        c0 = Variable(self.c0.expand(1, batch_size,
-                                     self.nhid).contiguous().to(self.device), requires_grad=True)
-        return h0, c0

@@ -165,4 +165,4 @@ all_preds = [' '.join(ele) for ele in all_preds]
 
 # visualize results
 for sent, pred in zip(test_sentences_raw, all_preds):
-    print('%s==>%s\n' % (sent, pred))
+    print('%s ==> %s\n' % (sent, pred))

@@ -280,16 +280,9 @@ class LM(nn.Module):
         self.decoder = nn.Linear(nhid, ntoken)
         self.embed_drop = LockedDropout(dropout)
         self.output_drop = LockedDropout(dropout)
-        # self.init_weights()
 
         # # tie weights
         # self.decoder.weight = self.encoder.weight
-
-    # def init_weights(self):
-    #     initrange = 0.1
-    #     self.encoder.weight.data.uniform_(-initrange, initrange)
-    #     self.decoder.bias.data.fill_(0)
-    #     self.decoder.weight.data.uniform_(-initrange, initrange)
 
     def forward(self, inputs, hidden=None):
         """

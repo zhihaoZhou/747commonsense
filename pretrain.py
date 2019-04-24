@@ -128,7 +128,8 @@ model.load_state_dict(torch.load(config.save_path))
 print('loaded best model')
 
 # see some generations
-test_sentences = ['I went into my bedroom and flipped the light switch']
+test_sentences = ['I went into my bedroom and flipped the light switch',
+                  'I got my keys and unlocked my car.']
 test_sentences = [spacy_tok(sent) for sent in test_sentences]
 test_sentences = [[TEXT.vocab.stoi[tok] for tok in sent] for sent in test_sentences]
 test_sentences = torch.LongTensor(test_sentences).to(device)
@@ -142,8 +143,11 @@ def predict():
         # we only care about the last decoded
         last_decoded = decoded[:, -1, :]
         last_preds = last_decoded.argmax(1)
+
         print(last_preds.shape)
-        print(last_preds)
+
+        # for i in range(30):
+        #     last_preds = last_preds.unsqueeze()
 
 
 

@@ -138,16 +138,23 @@ print('test_sentences', test_sentences.shape, test_sentences)
 
 
 def predict():
+    all_preds = []
     with torch.no_grad():
         decoded, outputs, hidden = model(test_sentences)
         # we only care about the last decoded
         last_decoded = decoded[:, -1, :]
-        last_preds = last_decoded.argmax(1)
+        last_preds = last_decoded.argmax(1).unsqueeze(1)
+        all_preds.append(last_preds)
 
-        print(last_preds.shape)
+        for i in range(30):
+            decoded, outputs, hidden = model(last_preds, hidden)
+            last_decoded = decoded[:, -1, :]
+            last_preds = last_decoded.argmax(1).unsqueeze(1)
 
-        # for i in range(30):
-        #     last_preds = last_preds.unsqueeze()
+    all_preds = torch.cat(all_preds, dim=1)
+    print(all_preds.shape)
+    print(all_preds)
+
 
 
 

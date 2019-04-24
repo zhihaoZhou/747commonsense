@@ -128,9 +128,9 @@ model.load_state_dict(torch.load(config.save_path))
 print('loaded best model')
 
 # see some generations
-test_sentences = ['I went into my bedroom and flipped the light switch',
+test_sentences_raw = ['I went into my bedroom and flipped the light switch',
                   'I got my keys and unlocked my car. I']
-test_sentences = [spacy_tok(sent) for sent in test_sentences]
+test_sentences = [spacy_tok(sent) for sent in test_sentences_raw]
 test_sentences = [[TEXT.vocab.stoi[tok] for tok in sent] for sent in test_sentences]
 test_sentences = torch.LongTensor(test_sentences).to(device)
 
@@ -158,5 +158,8 @@ def predict():
 
 all_preds = predict().cpu().numpy()
 all_preds = [[TEXT.vocab.itos[idx] for idx in row] for row in all_preds]
-print(all_preds)
+all_preds = [' '.join(ele) for ele in all_preds]
 
+# visualize results
+for sent, pred in zip(test_sentences_raw, all_preds):
+    print('%s | %s' % (sent, pred))

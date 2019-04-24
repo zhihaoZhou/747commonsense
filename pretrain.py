@@ -36,6 +36,7 @@ class Config:
     dev_f = 'lm.dev'
     file_path = 'pretrain_data'
     vectors = "glove.840B.300d"
+    is_train = True
 
 
 config = Config()
@@ -104,10 +105,17 @@ def eval_epoch():
     return 2 ** np.mean(epoch_losses)
 
 
-for epoch in range(config.num_epochs):
-    cur_lr = optimizer.param_groups[0]['lr']
-    train_perplex = train_epoch()
-    dev_perplex = eval_epoch()
-    print('epoch %d, lr %.5f, train_perplex %.4f, dev dev_perplex %.4f' %
-          (epoch, cur_lr, train_perplex, dev_perplex))
+if config.is_train:
+    best_dev_perplex = float('inf')
+    for epoch in range(config.num_epochs):
+        cur_lr = optimizer.param_groups[0]['lr']
+        train_perplex = train_epoch()
+        dev_perplex = eval_epoch()
+
+        if (dev_perplex < best_dev_perplex):
+            best_dev_perplex = dev_perplex
+
+        print('epoch %d, lr %.5f, train_perplex %.4f, dev dev_perplex %.4f' %
+              (epoch, cur_lr, train_perplex, dev_perplex))
+# else:
 

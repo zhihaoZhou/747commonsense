@@ -150,6 +150,7 @@ def predict():
             decoded, outputs, hidden = model(last_preds, hidden)
             last_decoded = decoded[:, -1, :]
             last_preds = last_decoded.argmax(1).unsqueeze(1)
+            all_preds.append(last_preds)
 
     all_preds = torch.cat(all_preds, dim=1)
     print(all_preds.shape)

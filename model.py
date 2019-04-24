@@ -278,8 +278,12 @@ class LM(nn.Module):
         self.encoder = embedding
         self.rnn = nn.LSTM(ninp, nhid, batch_first=True)
         self.decoder = nn.Linear(nhid, ntoken)
-        self.embed_drop = LockedDropout(dropout)
-        self.output_drop = LockedDropout(dropout)
+        # self.embed_drop = LockedDropout(dropout)
+        # self.output_drop = LockedDropout(dropout)
+        self.embed_drop = nn.Dropout(dropout)
+        self.output_drop = nn.Dropout(dropout)
+
+
         # self.h0 = Variable(torch.FloatTensor(1, 1, nhid).uniform_(-0.1, 0.1), requires_grad=False).to(device)
         # self.c0 = Variable(torch.FloatTensor(1, 1, nhid).uniform_(-0.1, 0.1), requires_grad=False).to(device)
         self.init_weights()

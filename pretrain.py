@@ -26,9 +26,8 @@ class Config:
     batch_size = 32
     bptt_len = 60
     embed_dim = 300
-    # hidden_dim = 512
-    hidden_dim = 300
-    dropout = 0.1
+    hidden_dim = 1024
+    dropout = 0.3
     lr = 10
     num_epochs = 30
     grad_clipping = 10

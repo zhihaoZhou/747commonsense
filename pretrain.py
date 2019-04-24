@@ -30,8 +30,8 @@ class Config:
     dropout = 0.4
     lr = 10
     num_epochs = 60
-    # grad_clipping = 10
-    grad_clipping = 1
+    # grad_clipping = 1
+    grad_clipping = 0.25
     data_dir = 'pretrain_data'
     train_f = 'lm.train'
     dev_f = 'lm.dev'

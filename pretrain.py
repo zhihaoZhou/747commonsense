@@ -153,11 +153,10 @@ def predict():
             all_preds.append(last_preds)
 
     all_preds = torch.cat(all_preds, dim=1)
-    print(all_preds.shape)
-    print(all_preds)
+    return all_preds
 
 
+all_preds = predict().cpu().numpy()
+all_preds = [[TEXT.vocab.itos[idx] for idx in row] for row in all_preds]
 
-
-predict()
 

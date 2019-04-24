@@ -133,17 +133,19 @@ test_sentences = [spacy_tok(sent) for sent in test_sentences]
 test_sentences = [[TEXT.vocab.stoi[tok] for tok in sent] for sent in test_sentences]
 test_sentences = torch.LongTensor(test_sentences).to(device)
 
-print(test_sentences)
-print(test_sentences.shape)
+print('test_sentences', test_sentences.shape, test_sentences)
 
 
 def predict():
     with torch.no_grad():
         decoded, outputs, hidden = model(test_sentences)
         # we only care about the last decoded
-        print(decoded.shape)
         last_decoded = decoded[:, -1, :]
-        print(last_decoded.shape)
+        last_preds = last_decoded.argmax(1)
+        print(last_preds.shape)
+        print(last_preds)
+
+
 
 predict()
 

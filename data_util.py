@@ -84,7 +84,7 @@ class DataUtil:
                     })
 
         # TEXT.build_vocab(combined, vectors=config.vectors)
-        TEXT.build_vocab([train, val, test], vectors=config.vectors)
+        TEXT.build_vocab(train, val, test, vectors=config.vectors)
         POS.build_vocab(combined)
         NER.build_vocab(combined)
         REL.build_vocab(combined)

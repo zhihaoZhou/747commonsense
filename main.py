@@ -50,7 +50,7 @@ def get_pretrained_lm():
     lm.load_state_dict(torch.load(config.lm_path))
     print('loaded best model')
     lm.eval()
-    lm.parameters().require_grad = False
+    lm.parameters().requires_grad = False
     return lm
 
 

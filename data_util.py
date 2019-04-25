@@ -83,7 +83,8 @@ class DataUtil:
                     'p_c_relation': ('p_c_relation', REL)
                     })
 
-        TEXT.build_vocab(combined, vectors=config.vectors)
+        # TEXT.build_vocab(combined, vectors=config.vectors)
+        TEXT.build_vocab(train, vectors=config.vectors)
         POS.build_vocab(combined)
         NER.build_vocab(combined)
         REL.build_vocab(combined)

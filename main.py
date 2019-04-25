@@ -39,12 +39,19 @@ class Config:
     rnn_output_dropout_rate = 0.4
     grad_clipping = 10
     lr = 2e-3
+    lm_path = 'lm.pt'
 
 
 def get_pretrained_lm():
-    lm_vocab_size =
-    lm = LM(vocab_size, config.embed_dim, 1024,
-            nn.Embedding(), 0, device)
+    global config
+    lm_vocab_size = 9689
+    lm = LM(lm_vocab_size, config.embed_dim, 1024,
+            nn.Embedding(lm_vocab_size, config.embed_dim), 0, device).to(device)
+    lm.load_state_dict(torch.load(config.lm_path))
+    print('loaded best model')
+    lm.eval()
+    lm.parameters().require_grad = False
+    return lm
 
 
 if __name__ == '__main__':
@@ -62,8 +69,8 @@ if __name__ == '__main__':
                                                                     len(data_util.val_iter),
                                                                     len(data_util.test_iter)))
 
-    lm = LM(vocab_size, config.embed_dim, config.hidden_dim,
-            data_util.embedding, config.dropout, device)
+    lm = get_pretrained_lm()
+    print('lm got!!')
 
     model = TriAn(data_util.embedding, data_util.embedding_pos,
                   data_util.embedding_ner, data_util.embedding_rel, config).to(device)

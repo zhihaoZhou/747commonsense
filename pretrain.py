@@ -57,6 +57,7 @@ print('train batch num: %d, dev batch num: %d' % (len(train_iter), len(dev_iter)
 
 # define model
 vocab_size = len(TEXT.vocab)
+print('vocab size is:', vocab_size)
 embedding = nn.Embedding(vocab_size, config.embed_dim)
 embedding.weight.data.copy_(TEXT.vocab.vectors)
 embedding.weight.requires_grad = False

@@ -41,6 +41,12 @@ class Config:
     lr = 2e-3
 
 
+def get_pretrained_lm():
+    lm_vocab_size =
+    lm = LM(vocab_size, config.embed_dim, 1024,
+            nn.Embedding(), 0, device)
+
+
 if __name__ == '__main__':
     config = Config()
 
@@ -55,6 +61,9 @@ if __name__ == '__main__':
     print('train batches: %d, val batches: %d, test batches: %d' % (len(data_util.train_iter),
                                                                     len(data_util.val_iter),
                                                                     len(data_util.test_iter)))
+
+    lm = LM(vocab_size, config.embed_dim, config.hidden_dim,
+            data_util.embedding, config.dropout, device)
 
     model = TriAn(data_util.embedding, data_util.embedding_pos,
                   data_util.embedding_ner, data_util.embedding_rel, config).to(device)

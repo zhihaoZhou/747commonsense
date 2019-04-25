@@ -60,7 +60,7 @@ class DataUtil:
                     'tf': ('tf', TF),
                     'p_q_relation': ('p_q_relation', REL),
                     'p_c_relation': ('p_c_relation', REL)
-                   })
+                    })
 
         print('train: %d, val: %d, test: %d' % (len(train), len(val), len(test)))
 
@@ -81,7 +81,7 @@ class DataUtil:
                     'tf': ('tf', TF),
                     'p_q_relation': ('p_q_relation', REL),
                     'p_c_relation': ('p_c_relation', REL)
-                   })
+                    })
 
         TEXT.build_vocab(combined, vectors=config.vectors)
         POS.build_vocab(combined)

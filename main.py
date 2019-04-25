@@ -42,16 +42,16 @@ class Config:
     lm_path = 'lm.pt'
 
 
-def get_pretrained_lm():
-    global config
-    lm_vocab_size = 9689
-    lm = LM(lm_vocab_size, config.embed_dim, 1024,
-            nn.Embedding(lm_vocab_size, config.embed_dim), 0, device).to(device)
-    lm.load_state_dict(torch.load(config.lm_path))
-    print('loaded best model')
-    lm.eval()
-    lm.parameters().requires_grad = False
-    return lm
+# def get_pretrained_lm():
+#     global config
+#     lm_vocab_size = 9689
+#     lm = LM(lm_vocab_size, config.embed_dim, 1024,
+#             nn.Embedding(lm_vocab_size, config.embed_dim), 0, device).to(device)
+#     lm.load_state_dict(torch.load(config.lm_path))
+#     print('loaded best model')
+#     lm.eval()
+#     lm.parameters().requires_grad = False
+#     return lm
 
 
 if __name__ == '__main__':
@@ -69,8 +69,8 @@ if __name__ == '__main__':
                                                                     len(data_util.val_iter),
                                                                     len(data_util.test_iter)))
 
-    lm = get_pretrained_lm()
-    print('lm got!!')
+    # lm = get_pretrained_lm()
+    # print('lm got!!')
 
     model = TriAn(data_util.embedding, data_util.embedding_pos,
                   data_util.embedding_ner, data_util.embedding_rel, config).to(device)

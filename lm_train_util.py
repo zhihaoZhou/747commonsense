@@ -26,9 +26,6 @@ class LMTrainUtil:
             x, y = batch.text.transpose(0, 1).contiguous().to(self.device), \
                    batch.target.transpose(0, 1).contiguous().to(self.device)
 
-            print('!', x.shape)
-            raise Exception
-
             self.optimizer.zero_grad()
             decoded, _, _ = self.model(x)
 

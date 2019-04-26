@@ -27,9 +27,13 @@ class TrainUtil:
 
     @staticmethod
     def parse_batch(batch):
-        d_words, d_lengths = batch.d_words
-        q_words, q_lengths = batch.q_words
-        c_words, c_lengths = batch.c_words
+        d_words = batch.d_words
+        q_words = batch.q_words
+        c_words = batch.c_words
+        d_lengths = batch.d_lengths[1]
+        q_lengths = batch.q_lengths[1]
+        c_lengths = batch.c_lengths[1]
+
         d_pos = batch.d_pos[0]
         d_ner = batch.d_ner[0]
         q_pos = batch.q_pos[0]
@@ -41,9 +45,9 @@ class TrainUtil:
         p_q_relation = batch.p_q_relation[0]
         p_c_relation = batch.p_c_relation[0]
 
-        d_words, d_lengths = torch.transpose(d_words, 0, 1), d_lengths
-        q_words, q_lengths = torch.transpose(q_words, 0, 1), q_lengths
-        c_words, c_lengths = torch.transpose(c_words, 0, 1), c_lengths
+        d_words = torch.transpose(d_words, 0, 1)
+        q_words = torch.transpose(q_words, 0, 1)
+        c_words = torch.transpose(c_words, 0, 1)
         d_pos, d_ner, q_pos = torch.transpose(d_pos, 0, 1), \
                               torch.transpose(d_ner, 0, 1), torch.transpose(q_pos, 0, 1)
 

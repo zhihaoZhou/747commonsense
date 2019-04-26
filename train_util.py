@@ -100,12 +100,7 @@ class TrainUtil:
         for i, batch in enumerate(self.train_iter):
             # get batch
             d_words, d_pos, d_ner, d_lengths, q_words, q_pos, q_lengths, c_words, c_lengths, \
-            labels, in_q, in_c, lemma_in_q, lemma_in_c, tf, p_q_relation, p_c_relation = self.parse_batch(batch)
-
-            print('??', d_words.shape)
-            print('??', d_lengths.shape)
-            raise Exception('here')
-
+                labels, in_q, in_c, lemma_in_q, lemma_in_c, tf, p_q_relation, p_c_relation = self.parse_batch(batch)
 
             # get outputs and loss
             self.optimizer.zero_grad()

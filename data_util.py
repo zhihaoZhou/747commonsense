@@ -88,6 +88,8 @@ class DataUtil:
         print('ner size: %d' % len(NER.vocab))
         print('rel size: %d' % len(REL.vocab))
 
+        raise Exception()
+
         self.train_iter = data.BucketIterator(dataset=train, batch_size=config.batch_size_train,
                                               sort_key=lambda x: len(x.d_words), device=device, shuffle=True,
                                               sort_within_batch=False, repeat=False)

@@ -34,7 +34,6 @@ class LMConfig:
     train_f = 'lm.train'
     dev_f = 'lm.dev'
     file_path = 'pretrain_data'
-    vectors = "glove.840B.300d"
     save_path = 'lm.pt'
     is_train = False
 

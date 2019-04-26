@@ -89,10 +89,10 @@ class DataUtil:
         print('rel size: %d' % len(REL.vocab))
 
         # iterators
-        self.lm_train_iter = data.BPTTIterator(lm_train, batch_size=config.batch_size,
-                                               bptt_len=config.bptt_len, repeat=False)
-        self.lm_dev_iter = data.BPTTIterator(lm_dev, batch_size=config.batch_size,
-                                             bptt_len=config.bptt_len, repeat=False)
+        self.lm_train_iter = data.BPTTIterator(lm_train, batch_size=lm_config.batch_size,
+                                               bptt_len=lm_config.bptt_len, repeat=False)
+        self.lm_dev_iter = data.BPTTIterator(lm_dev, batch_size=lm_config.batch_size,
+                                             bptt_len=lm_config.bptt_len, repeat=False)
 
         print('lm train batch num: %d, lm dev batch num: %d' %
               (len(self.lm_train_iter), len(self.lm_dev_iter)))

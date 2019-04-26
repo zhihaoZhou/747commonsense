@@ -51,14 +51,13 @@ class BLSTM(nn.Module):
         return outputs
 
 
-def lengths_to_mask(lengths, dtype=torch.uint8):
+def lengths_to_mask(lengths, device, dtype=torch.uint8):
     """
 
     :param lengths: (batch_size)
     :param dtype:
     :return: (batch_size, max_len)
     """
-    device = lengths.get_device()
     lengths = lengths.cpu()
 
     max_len = lengths.max().item()
@@ -172,12 +171,13 @@ class Bilinear(nn.Module):
 
 
 class TriAn(nn.Module):
-    def __init__(self, embedding, embedding_pos, embedding_ner, embedding_rel, config):
+    def __init__(self, embedding, embedding_pos, embedding_ner, embedding_rel, config, device):
         super(TriAn, self).__init__()
         self.embedding = embedding
         self.embedding_pos = embedding_pos
         self.embedding_ner = embedding_ner
         self.embedding_rel = embedding_rel
+        self.device = device
 
         self.d_rnn = BLSTM(config.embed_dim * 2 + config.embed_dim_pos + config.embed_dim_ner + config.
                            embed_dim_rel * 2 + config.embed_dim_value * 5, config.hidden_size,
@@ -217,9 +217,9 @@ class TriAn(nn.Module):
         p_q_rel_embed, p_c_rel_embed = self.embed_dropout(p_q_rel_embed), self.embed_dropout(p_c_rel_embed)
 
         # get masks
-        d_mask = lengths_to_mask(d_lengths)
-        q_mask = lengths_to_mask(q_lengths)
-        c_mask = lengths_to_mask(c_lengths)
+        d_mask = lengths_to_mask(d_lengths, self.device)
+        q_mask = lengths_to_mask(q_lengths, self.device)
+        c_mask = lengths_to_mask(c_lengths, self.device)
 
         # get attention contexts
         d_on_q_contexts = self.embed_dropout(self.d_on_q_attn(d_embed, q_embed, q_mask))

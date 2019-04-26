@@ -27,6 +27,7 @@ class LMConfig:
     batch_size = 32
     bptt_len = 60
     embed_dim = 300
+    # hidden_dim = 1024
     hidden_dim = 1024
     dropout = 0.4
     lr = 10

@@ -5,6 +5,7 @@ import torch.optim as optim
 from model import *
 from data_util import DataUtil
 from train_util import TrainUtil
+from pretrain import *
 
 USE_CUDA = torch.cuda.is_available()
 device = torch.device("cuda" if USE_CUDA else "cpu")
@@ -40,18 +41,16 @@ class Config:
     grad_clipping = 10
     lr = 2e-3
     lm_path = 'lm.pt'
-
-
-if __name__ == '__main__':
-    config = Config()
-
     data_dir = 'preprocessed'
     train_fname = 'train-trial-combined-data-processed.json'
     dev_fname = 'dev-data-processed.json'
     test_fname = 'test-data-processed.json'
 
-    data_util = DataUtil(data_dir, train_fname, dev_fname,
-                         test_fname, config, device)
+
+if __name__ == '__main__':
+    config = Config()
+    lm_config = LMConfig()
+    data_util = DataUtil(config, lm_config, device)
     print('train batches: %d, val batches: %d, test batches: %d' % (len(data_util.train_iter),
                                                                     len(data_util.val_iter),
                                                                     len(data_util.test_iter)))

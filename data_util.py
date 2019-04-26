@@ -1,16 +1,6 @@
-import torchtext
-from torchtext import data
-import os
 import torch.nn as nn
-
-import numpy as np
-import torch
-import torch.nn as nn
-import torch.optim as optim
-import torchtext
 from torchtext import data, datasets
 import os
-from model import LM
 
 
 # Load data
@@ -38,8 +28,7 @@ class DataUtil:
 
         return tf_batch
 
-    def __init__(self, data_dir, train_fname, dev_fname, test_fname, config, lm_config,
-                 device):
+    def __init__(self, config, lm_config, device):
         # define all fields
         TEXT = data.ReversibleField(sequential=True, tokenize=self.tokenizer,
                                     lower=False, include_lengths=True)
@@ -59,23 +48,17 @@ class DataUtil:
         REL = data.ReversibleField(sequential=True, lower=False, include_lengths=True)
 
         # load lm data first
-        lm_tok = spacy.load('en')
-        lm_tok.tokenizer.add_special_case('<unk>', [{ORTH: '<unk>'}])
-
-        def spacy_tok(x):
-            return [tok.text for tok in lm_tok.tokenizer(x)]
-
-        lm_train = datasets.LanguageModelingDataset(os.path.join(config.file_path, config.train_f),
-                                                 TEXT, newline_eos=False)
-        lm_dev = datasets.LanguageModelingDataset(os.path.join(config.file_path, config.dev_f),
-                                               TEXT, newline_eos=False)
+        lm_train = datasets.LanguageModelingDataset(os.path.join(lm_config.file_path, lm_config.train_f),
+                                                    TEXT, newline_eos=False)
+        lm_dev = datasets.LanguageModelingDataset(os.path.join(lm_config.file_path, lm_config.dev_f),
+                                                  TEXT, newline_eos=False)
 
         # load actual data
         # we have keys: 'id', 'd_words', 'd_pos', 'd_ner', 'q_words', 'q_pos', 'c_words',
         #       'label', 'in_q', 'in_c', 'lemma_in_q', 'tf', 'p_q_relation', 'p_c_relation'
         train, val, test = data.TabularDataset.splits(
-            path=data_dir, train=train_fname,
-            validation=dev_fname, test=test_fname, format='json',
+            path=config.data_dir, train=config.train_fname,
+            validation=config.dev_fname, test=config.test_fname, format='json',
             fields={'d_words': ('d_words', TEXT),
                     'd_pos':   ('d_pos', POS),
                     'd_ner':   ('d_ner', NER),
@@ -94,6 +77,7 @@ class DataUtil:
 
         print('train: %d, val: %d, test: %d' % (len(train), len(val), len(test)))
 
+        # construct vocabulary
         TEXT.build_vocab(train, val, test, lm_train, lm_dev, vectors=config.vectors)
         POS.build_vocab(train, val, test)
         NER.build_vocab(train, val, test)

@@ -2,6 +2,8 @@ import numpy as np
 import torch
 import sys
 import time
+import torch.nn as nn
+import torch.optim as optim
 
 
 class TrainUtil:
@@ -59,13 +61,14 @@ class TrainUtil:
         return d_words, d_pos, d_ner, d_lengths, q_words, q_pos, q_lengths, c_words, c_lengths, \
                labels, in_q, in_c, lemma_in_q, lemma_in_c, tf, p_q_relation, p_c_relation
 
-    def __init__(self, train_iter, val_iter, model, optimizer, criterion, scheduler, device, config):
+    def __init__(self, train_iter, val_iter, model, device, config):
+        self.criterion = nn.BCELoss().to(device)
+        self.optimizer = optim.Adamax(model.parameters(), lr=config.lr, weight_decay=0)
+        self.scheduler = optim.lr_scheduler.MultiStepLR(self.optimizer,
+                                                        milestones=[10, 15], gamma=0.5)
         self.train_iter = train_iter
         self.val_iter = val_iter
         self.model = model
-        self.optimizer = optimizer
-        self.criterion = criterion
-        self.scheduler = scheduler
         self.device = device
         self.config = config
 
@@ -81,10 +84,6 @@ class TrainUtil:
             # get batch
             d_words, d_pos, d_ner, d_lengths, q_words, q_pos, q_lengths, c_words, c_lengths, \
             labels, in_q, in_c, lemma_in_q, lemma_in_c, tf, p_q_relation, p_c_relation = self.parse_batch(batch)
-
-
-            print('!!!!', d_words.shape)
-            raise Exception()
 
             # get outputs and loss
             self.optimizer.zero_grad()

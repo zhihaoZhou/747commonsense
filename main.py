@@ -67,20 +67,18 @@ if __name__ == '__main__':
     config = Config()
     lm_config = LMConfig()
     data_util = DataUtil(config, lm_config, device)
-    print('train batches: %d, val batches: %d, test batches: %d' % (len(data_util.train_iter),
-                                                                    len(data_util.val_iter),
-                                                                    len(data_util.test_iter)))
 
+    # define language model
+    lm = LM(data_util.vocab_size, lm_config.embed_dim, lm_config.hidden_dim, data_util.embedding,
+            lm_config.dropout, device).to(device)
+
+    # define tri-an model
     model = TriAn(data_util.embedding, data_util.embedding_pos,
                   data_util.embedding_ner, data_util.embedding_rel, config).to(device)
 
-    criterion = nn.BCELoss().to(device)
-    optimizer = optim.Adamax(model.parameters(), lr=config.lr, weight_decay=0)
-    scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[10, 15], gamma=0.5)
-
+    # train model
     train_util = TrainUtil(data_util.train_iter, data_util.val_iter, model,
-                           optimizer, criterion, scheduler, device, config)
-
+                           device, config)
     train_util.train_model()
 
 

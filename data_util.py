@@ -136,5 +136,6 @@ class DataUtil:
         print('embedding_ner', self.embedding_ner)
         print('embedding_rel', self.embedding_rel)
 
-        raise Exception('debug')
+        self.vocab_size = len(TEXT.vocab)
+        print('vocab_size is', self.vocab_size)
 

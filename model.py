@@ -332,7 +332,7 @@ class LM(nn.Module):
 
 
 class TriAnWithLM(nn.Module):
-    def __init__(self, embedding, lm, embedding_pos, embedding_ner, embedding_rel, config):
+    def __init__(self, embedding, lm, embedding_pos, embedding_ner, embedding_rel, config, lm_config):
         super(TriAnWithLM, self).__init__()
         self.embedding = embedding
         self.lm = lm
@@ -342,10 +342,11 @@ class TriAnWithLM(nn.Module):
 
         self.d_rnn = BLSTM(config.embed_dim * 2 + config.embed_dim_pos + config.embed_dim_ner + config.
                            embed_dim_rel * 2 + config.embed_dim_value * 5, config.hidden_size,
-                           config.num_layers, config.rnn_dropout_rate)
+                           config.num_layers, config.rnn_dropout_rate + lm_config.hidden_dim)
         self.q_rnn = BLSTM(config.embed_dim + config.embed_dim_pos, config.hidden_size, config.num_layers,
-                           config.rnn_dropout_rate)
-        self.c_rnn = BLSTM(config.embed_dim * 3, config.hidden_size, config.num_layers, config.rnn_dropout_rate)
+                           config.rnn_dropout_rate + lm_config.hidden_dim)
+        self.c_rnn = BLSTM(config.embed_dim * 3, config.hidden_size, config.num_layers, config.rnn_dropout_rate
+                           + lm_config.hidden_dim)
 
         self.embed_dropout = nn.Dropout(config.embed_dropout_rate)
 
@@ -371,8 +372,11 @@ class TriAnWithLM(nn.Module):
 
         print('d_embed', d_embed.shape)
 
-        _, lm_outputs, _ = self.lm(d_words)
-        print('lm_outputs', lm_outputs.shape)
+        _, lm_d_outputs, _ = self.lm(d_words)
+        _, lm_q_outputs, _ = self.lm(q_words)
+        _, lm_c_outputs, _ = self.lm(c_words)
+
+        print('lm_outputs', lm_d_outputs.shape)
 
         raise Exception()
 

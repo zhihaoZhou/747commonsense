@@ -88,7 +88,14 @@ class DataUtil:
         print('ner size: %d' % len(NER.vocab))
         print('rel size: %d' % len(REL.vocab))
 
-        raise Exception()
+        # iterators
+        self.lm_train_iter = data.BPTTIterator(lm_train, batch_size=config.batch_size,
+                                               bptt_len=config.bptt_len, repeat=False)
+        self.lm_dev_iter = data.BPTTIterator(lm_dev, batch_size=config.batch_size,
+                                             bptt_len=config.bptt_len, repeat=False)
+
+        print('lm train batch num: %d, lm dev batch num: %d' %
+              (len(self.lm_train_iter), len(self.lm_dev_iter)))
 
         self.train_iter = data.BucketIterator(dataset=train, batch_size=config.batch_size_train,
                                               sort_key=lambda x: len(x.d_words), device=device, shuffle=True,
@@ -102,6 +109,9 @@ class DataUtil:
         self.test_iter = data.Iterator(dataset=test, batch_size=config.batch_size_test,
                                        sort_key=lambda x: len(x.d_words), train=False, shuffle=False,
                                        sort_within_batch=False, device=device, repeat=False)
+
+        print('train batch num: %d, dev batch num: %d' %
+              (len(self.train_iter), len(self.val_iter)))
 
         # # Create embeddings
         embedding = nn.Embedding(len(TEXT.vocab), config.embed_dim)
@@ -125,4 +135,6 @@ class DataUtil:
         print('embedding_pos', self.embedding_pos)
         print('embedding_ner', self.embedding_ner)
         print('embedding_rel', self.embedding_rel)
+
+        raise Exception('debug')
 

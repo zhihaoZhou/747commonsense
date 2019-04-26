@@ -78,7 +78,9 @@ if __name__ == '__main__':
             lm_config.dropout, device).to(device)
 
     # define tri-an model
-    model = TriAn(data_util.embedding, data_util.embedding_pos,
+    # model = TriAn(data_util.embedding, data_util.embedding_pos,
+    #               data_util.embedding_ner, data_util.embedding_rel, config).to(device)
+    model = TriAnWithLM(data_util.embedding, data_util.embedding_pos,
                   data_util.embedding_ner, data_util.embedding_rel, config).to(device)
 
     # train language model
@@ -86,8 +88,6 @@ if __name__ == '__main__':
                                 data_util.vocab_size, data_util.TEXT)
     lm_trian_util.train_model()
     lm_trian_util.generate()
-
-    raise Exception()
 
     # train tri-an model
     train_util = TrainUtil(data_util.train_iter, data_util.val_iter, model,

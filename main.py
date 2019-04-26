@@ -1,6 +1,7 @@
 import random
 import numpy as np
 import torch.optim as optim
+import sys
 
 from model import *
 from data_util import DataUtil
@@ -68,7 +69,14 @@ class Config:
     test_fname = 'test-data-processed.json'
 
 
+modes = ['train_lm', 'test_lm', 'train_tri-an']
+
 if __name__ == '__main__':
+    if len(sys.argv) != 2 or sys.argv[1] not in modes:
+        print('add one of the following arguments:', modes)
+    mode = sys.argv[1]
+    print('mode is', mode)
+
     config = Config()
     lm_config = LMConfig()
     data_util = DataUtil(config, lm_config, device)
@@ -77,20 +85,24 @@ if __name__ == '__main__':
     lm = LM(data_util.vocab_size, lm_config.embed_dim, lm_config.hidden_dim, data_util.embedding,
             lm_config.dropout, device).to(device)
 
-    # # train language model
-    # lm_trian_util = LMTrainUtil(data_util.lm_train_iter, data_util.lm_dev_iter, lm, device, lm_config,
-    #                             data_util.vocab_size, data_util.TEXT)
-    # lm_trian_util.train_model()
-    # lm_trian_util.generate()
+    lm_train_util = LMTrainUtil(data_util.lm_train_iter, data_util.lm_dev_iter, lm, device, lm_config,
+                                data_util.vocab_size, data_util.TEXT)
 
-    # define tri-an model
-    # model = TriAn(data_util.embedding, data_util.embedding_pos,
-    #               data_util.embedding_ner, data_util.embedding_rel, config).to(device)
+    if mode == 'train_lm':
+        # train language model
+        lm_train_util.train_model()
+    elif mode == 'test_lm':
+        lm_train_util.generate()
+    elif mode == 'train_tri-an':
+        # define tri-an model
+        # model = TriAn(data_util.embedding, data_util.embedding_pos,
+        #               data_util.embedding_ner, data_util.embedding_rel, config).to(device)
 
-    model = TriAnWithLM(data_util.embedding, lm, data_util.embedding_pos,
-                  data_util.embedding_ner, data_util.embedding_rel, config, lm_config, device).to(device)
+        lm_train_util.generate()
+        model = TriAnWithLM(data_util.embedding, lm, data_util.embedding_pos,
+                      data_util.embedding_ner, data_util.embedding_rel, config, lm_config, device).to(device)
 
-    # train tri-an model
-    train_util = TrainUtil(data_util.train_iter, data_util.val_iter, model,
-                           device, config, data_util.TEXT)
-    train_util.train_model()
+        # train tri-an model
+        train_util = TrainUtil(data_util.train_iter, data_util.val_iter, model,
+                               device, config, data_util.TEXT)
+        train_util.train_model()

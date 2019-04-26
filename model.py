@@ -332,9 +332,10 @@ class LM(nn.Module):
 
 
 class TriAnWithLM(nn.Module):
-    def __init__(self, embedding, embedding_pos, embedding_ner, embedding_rel, config):
+    def __init__(self, embedding, lm, embedding_pos, embedding_ner, embedding_rel, config):
         super(TriAnWithLM, self).__init__()
         self.embedding = embedding
+        self.lm = lm
         self.embedding_pos = embedding_pos
         self.embedding_ner = embedding_ner
         self.embedding_rel = embedding_rel
@@ -367,6 +368,9 @@ class TriAnWithLM(nn.Module):
         d_embed, q_embed, c_embed = self.embedding(d_words), self.embedding(q_words), self.embedding(c_words)
         d_embed, q_embed, c_embed = self.embed_dropout(d_embed), self.embed_dropout(q_embed), self.embed_dropout(
             c_embed)
+
+        print('haha')
+        raise Exception()
 
         d_pos_embed, d_ner_embed, q_pos_embed = self.embedding_pos(d_pos), self.embedding_ner(
             d_ner), self.embedding_pos(q_pos)

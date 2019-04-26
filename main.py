@@ -80,7 +80,7 @@ if __name__ == '__main__':
     # define tri-an model
     # model = TriAn(data_util.embedding, data_util.embedding_pos,
     #               data_util.embedding_ner, data_util.embedding_rel, config).to(device)
-    model = TriAnWithLM(data_util.embedding, data_util.embedding_pos,
+    model = TriAnWithLM(data_util.embedding, lm, data_util.embedding_pos,
                   data_util.embedding_ner, data_util.embedding_rel, config).to(device)
 
     # # train language model

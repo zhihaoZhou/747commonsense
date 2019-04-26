@@ -36,7 +36,7 @@ class LMConfig:
     dev_f = 'lm.dev'
     file_path = 'pretrain_data'
     save_path = 'lm.pt'
-    milestones = [50]
+    milestones = []
     gamma = 0.1
     is_train = False
 

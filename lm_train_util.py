@@ -64,17 +64,17 @@ class LMTrainUtil:
             if dev_perplex < best_dev_perplex:
                 best_dev_perplex = dev_perplex
                 best_epoch = epoch
-                # early stopping
-                torch.save(self.model.state_dict(), self.config.save_path)
-                print('saved best model')
+                # # early stopping
+                # torch.save(self.model.state_dict(), self.config.save_path)
+                # print('saved best model')
 
             print('epoch %d, lr %.5f, train_perplex %.4f, dev dev_perplex %.4f' %
                   (epoch, cur_lr, train_perplex, dev_perplex))
         print('best perplex %.4f, best epoch %d' % (best_dev_perplex, best_epoch))
 
-        # # save most recent model regardless of dev score
-        # torch.save(self.model.state_dict(), self.config.save_path)
-        # print('saved best model')
+        # save most recent model regardless of dev score
+        torch.save(self.model.state_dict(), self.config.save_path)
+        print('saved best model')
 
     def load_trained_model(self):
         # load best model

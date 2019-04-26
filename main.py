@@ -5,7 +5,6 @@ import torch.optim as optim
 from model import *
 from data_util import DataUtil
 from train_util import TrainUtil
-from pretrain import *
 
 USE_CUDA = torch.cuda.is_available()
 device = torch.device("cuda" if USE_CUDA else "cpu")
@@ -20,6 +19,24 @@ if torch.cuda.is_available():
     torch.cuda.manual_seed(seed)
 np.random.seed(seed)
 random.seed(seed)
+
+
+class LMConfig:
+    batch_size = 32
+    bptt_len = 60
+    embed_dim = 300
+    hidden_dim = 1024
+    dropout = 0.4
+    lr = 10
+    num_epochs = 40
+    grad_clipping = 0.5
+    data_dir = 'pretrain_data'
+    train_f = 'lm.train'
+    dev_f = 'lm.dev'
+    file_path = 'pretrain_data'
+    vectors = "glove.840B.300d"
+    save_path = 'lm.pt'
+    is_train = False
 
 
 class Config:

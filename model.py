@@ -370,6 +370,7 @@ class TriAnWithLM(nn.Module):
             c_embed)
 
         print('haha')
+        print(d_embed.shape)
         raise Exception()
 
         d_pos_embed, d_ner_embed, q_pos_embed = self.embedding_pos(d_pos), self.embedding_ner(

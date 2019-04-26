@@ -405,9 +405,6 @@ class TriAnWithLM(nn.Module):
         q_rnn_outputs = self.q_rnn(q_rnn_inputs, q_lengths)
         c_rnn_outputs = self.c_rnn(c_rnn_inputs, c_lengths)
 
-        print('d_rnn_outputs', d_rnn_outputs.shape)
-        raise Exception('!!!!')
-
         # get final representations
         q_rep = self.q_encode(q_rnn_outputs, q_mask)
         c_rep = self.c_encode(c_rnn_outputs, c_mask)

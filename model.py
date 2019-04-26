@@ -333,7 +333,7 @@ class LM(nn.Module):
 
 class TriAnWithLM(nn.Module):
     def __init__(self, embedding, embedding_pos, embedding_ner, embedding_rel, config):
-        super(TriAn, self).__init__()
+        super(TriAnWithLM, self).__init__()
         self.embedding = embedding
         self.embedding_pos = embedding_pos
         self.embedding_ner = embedding_ner

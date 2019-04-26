@@ -371,9 +371,9 @@ class TriAnWithLM(nn.Module):
         d_embed, q_embed, c_embed = self.embed_dropout(d_embed), self.embed_dropout(q_embed), self.embed_dropout(
             c_embed)
 
-        _, lm_d_outputs, _ = self.lm(d_words)
-        _, lm_q_outputs, _ = self.lm(q_words)
-        _, lm_c_outputs, _ = self.lm(c_words)
+        _, lm_d_outputs, _ = self.lm(d_words).detach()
+        _, lm_q_outputs, _ = self.lm(q_words).detach()
+        _, lm_c_outputs, _ = self.lm(c_words).detach()
 
         d_pos_embed, d_ner_embed, q_pos_embed = self.embedding_pos(d_pos), self.embedding_ner(
             d_ner), self.embedding_pos(q_pos)

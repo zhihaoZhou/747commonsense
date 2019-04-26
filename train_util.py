@@ -85,6 +85,10 @@ class TrainUtil:
             d_words, d_pos, d_ner, d_lengths, q_words, q_pos, q_lengths, c_words, c_lengths, \
             labels, in_q, in_c, lemma_in_q, lemma_in_c, tf, p_q_relation, p_c_relation = self.parse_batch(batch)
 
+            print('??', d_words.shape)
+            raise Exception('here')
+
+
             # get outputs and loss
             self.optimizer.zero_grad()
             outputs = self.model(d_words, d_pos, d_ner, d_lengths, q_words, q_pos, q_lengths, c_words, c_lengths, \

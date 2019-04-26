@@ -29,14 +29,14 @@ class LMConfig:
     hidden_dim = 1024
     dropout = 0.4
     lr = 10
-    num_epochs = 30
+    num_epochs = 60
     grad_clipping = 0.5
     data_dir = 'pretrain_data'
     train_f = 'lm.train'
     dev_f = 'lm.dev'
     file_path = 'pretrain_data'
     save_path = 'lm.pt'
-    milestones = [20]
+    milestones = [30, 50]
     gamma = 0.1
     is_train = False
 

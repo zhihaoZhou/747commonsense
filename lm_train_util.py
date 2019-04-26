@@ -101,7 +101,7 @@ class LMTrainUtil:
     def tokenizer(text):
         return text.split(" ")
 
-    def genreate(self):
+    def generate(self):
         # see some generations
         test_sentences_raw = ['I went into my bedroom and flipped the light switch',
                               'I got my keys and unlocked my car . I',

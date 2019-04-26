@@ -30,8 +30,6 @@ class DataUtil:
 
     def __init__(self, config, lm_config, device):
         # define all fields
-        # TEXT = data.ReversibleField(sequential=True, tokenize=self.tokenizer,
-        #                             lower=False, include_lengths=True)
         TEXT = data.ReversibleField(sequential=True, tokenize=self.tokenizer,
                                     lower=False, include_lengths=False)
         POS = data.ReversibleField(sequential=True, lower=False, include_lengths=True)

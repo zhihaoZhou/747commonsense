@@ -88,6 +88,8 @@ class DataUtil:
         print('ner size: %d' % len(NER.vocab))
         print('rel size: %d' % len(REL.vocab))
 
+        self.TEXT = TEXT
+
         # iterators
         self.lm_train_iter = data.BPTTIterator(lm_train, batch_size=lm_config.batch_size,
                                                bptt_len=lm_config.bptt_len, repeat=False)

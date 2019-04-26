@@ -65,7 +65,7 @@ class TrainUtil:
         self.criterion = nn.BCELoss().to(device)
         self.optimizer = optim.Adamax(model.parameters(), lr=config.lr, weight_decay=0)
         self.scheduler = optim.lr_scheduler.MultiStepLR(self.optimizer,
-                                                        milestones=[10, 15], gamma=0.5)
+                                                        milestones=config.milestones, gamma=config.gamma)
         self.train_iter = train_iter
         self.val_iter = val_iter
         self.model = model

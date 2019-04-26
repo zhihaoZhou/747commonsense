@@ -5,6 +5,7 @@ import torch.optim as optim
 from model import *
 from data_util import DataUtil
 from train_util import TrainUtil
+from lm_train_util import LMTrainUtil
 
 USE_CUDA = torch.cuda.is_available()
 device = torch.device("cuda" if USE_CUDA else "cpu")
@@ -28,13 +29,15 @@ class LMConfig:
     hidden_dim = 1024
     dropout = 0.4
     lr = 10
-    num_epochs = 40
+    num_epochs = 30
     grad_clipping = 0.5
     data_dir = 'pretrain_data'
     train_f = 'lm.train'
     dev_f = 'lm.dev'
     file_path = 'pretrain_data'
     save_path = 'lm.pt'
+    milestones = [20]
+    gamma = 0.1
     is_train = False
 
 
@@ -56,6 +59,8 @@ class Config:
     rnn_output_dropout_rate = 0.4
     grad_clipping = 10
     lr = 2e-3
+    milestones = [10, 15]
+    gamma = 0.5
     lm_path = 'lm.pt'
     data_dir = 'preprocessed'
     train_fname = 'train-trial-combined-data-processed.json'
@@ -76,7 +81,15 @@ if __name__ == '__main__':
     model = TriAn(data_util.embedding, data_util.embedding_pos,
                   data_util.embedding_ner, data_util.embedding_rel, config).to(device)
 
-    # train model
+    # train language model
+    lm_trian_util = LMTrainUtil(data_util.lm_train_iter, data_util.lm_dev_iter, lm, device, lm_config,
+                                data_util.vocab_size, data_util.TEXT)
+    lm_trian_util.train_model()
+    lm_trian_util.genreate()
+
+    raise Exception()
+
+    # train tri-an model
     train_util = TrainUtil(data_util.train_iter, data_util.val_iter, model,
                            device, config)
     train_util.train_model()

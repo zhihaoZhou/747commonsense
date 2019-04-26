@@ -395,9 +395,10 @@ class TriAnWithLM(nn.Module):
 
         # form final inputs for rnns
         d_rnn_inputs = torch.cat([d_embed, d_on_q_contexts, d_pos_embed, d_ner_embed, \
-                                  p_q_rel_embed, p_c_rel_embed, in_q, in_c, lemma_in_q, lemma_in_c, tf], dim=2)
-        q_rnn_inputs = torch.cat([q_embed, q_pos_embed], dim=2)
-        c_rnn_inputs = torch.cat([c_embed, c_on_q_contexts, c_on_d_contexts], dim=2)
+                                  p_q_rel_embed, p_c_rel_embed, in_q, in_c, lemma_in_q, lemma_in_c,
+                                  tf, lm_d_outputs], dim=2)
+        q_rnn_inputs = torch.cat([q_embed, q_pos_embed, lm_q_outputs], dim=2)
+        c_rnn_inputs = torch.cat([c_embed, c_on_q_contexts, c_on_d_contexts, lm_c_outputs], dim=2)
 
         # calculate rnn outputs
         d_rnn_outputs = self.d_rnn(d_rnn_inputs, d_lengths)

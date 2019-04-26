@@ -42,35 +42,19 @@ class Config:
     lm_path = 'lm.pt'
 
 
-# def get_pretrained_lm():
-#     global config
-#     lm_vocab_size = 9689
-#     lm = LM(lm_vocab_size, config.embed_dim, 1024,
-#             nn.Embedding(lm_vocab_size, config.embed_dim), 0, device).to(device)
-#     lm.load_state_dict(torch.load(config.lm_path))
-#     print('loaded best model')
-#     lm.eval()
-#     lm.parameters().requires_grad = False
-#     return lm
-
-
 if __name__ == '__main__':
     config = Config()
 
     data_dir = 'preprocessed'
-    combined_fname = 'all-combined-data-processed.json'
     train_fname = 'train-trial-combined-data-processed.json'
     dev_fname = 'dev-data-processed.json'
     test_fname = 'test-data-processed.json'
 
-    data_util = DataUtil(data_dir, combined_fname, train_fname, dev_fname,
+    data_util = DataUtil(data_dir, train_fname, dev_fname,
                          test_fname, config, device)
     print('train batches: %d, val batches: %d, test batches: %d' % (len(data_util.train_iter),
                                                                     len(data_util.val_iter),
                                                                     len(data_util.test_iter)))
-
-    # lm = get_pretrained_lm()
-    # print('lm got!!')
 
     model = TriAn(data_util.embedding, data_util.embedding_pos,
                   data_util.embedding_ner, data_util.embedding_rel, config).to(device)

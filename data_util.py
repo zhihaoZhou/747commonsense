@@ -3,6 +3,15 @@ from torchtext import data
 import os
 import torch.nn as nn
 
+import numpy as np
+import torch
+import torch.nn as nn
+import torch.optim as optim
+import torchtext
+from torchtext import data, datasets
+import os
+from model import LM
+
 
 # Load data
 # refer to
@@ -29,18 +38,39 @@ class DataUtil:
 
         return tf_batch
 
-    def __init__(self, data_dir, combined_fname, train_fname, dev_fname, test_fname, config, device):
-        TEXT = data.ReversibleField(sequential=True, tokenize=self.tokenizer, lower=False, include_lengths=True)
+    def __init__(self, data_dir, train_fname, dev_fname, test_fname, config, lm_config,
+                 device):
+        # define all fields
+        TEXT = data.ReversibleField(sequential=True, tokenize=self.tokenizer,
+                                    lower=False, include_lengths=True)
         POS = data.ReversibleField(sequential=True, lower=False, include_lengths=True)
         NER = data.ReversibleField(sequential=True, lower=False, include_lengths=True)
         LABEL = data.Field(sequential=False, use_vocab=False)
-        IN_Q = data.Field(sequential=True, use_vocab=False, include_lengths=True, postprocessing=self.to_numeric)
-        IN_C = data.Field(sequential=True, use_vocab=False, include_lengths=True, postprocessing=self.to_numeric)
-        LEMMA_IN_Q = data.Field(sequential=True, use_vocab=False, include_lengths=True, postprocessing=self.to_numeric)
-        LEMMA_IN_C = data.Field(sequential=True, use_vocab=False, include_lengths=True, postprocessing=self.to_numeric)
-        TF = data.Field(sequential=True, use_vocab=False, include_lengths=True, postprocessing=self.to_numeric)
+        IN_Q = data.Field(sequential=True, use_vocab=False, include_lengths=True,
+                          postprocessing=self.to_numeric)
+        IN_C = data.Field(sequential=True, use_vocab=False, include_lengths=True,
+                          postprocessing=self.to_numeric)
+        LEMMA_IN_Q = data.Field(sequential=True, use_vocab=False, include_lengths=True,
+                                postprocessing=self.to_numeric)
+        LEMMA_IN_C = data.Field(sequential=True, use_vocab=False, include_lengths=True,
+                                postprocessing=self.to_numeric)
+        TF = data.Field(sequential=True, use_vocab=False, include_lengths=True,
+                        postprocessing=self.to_numeric)
         REL = data.ReversibleField(sequential=True, lower=False, include_lengths=True)
 
+        # load lm data first
+        lm_tok = spacy.load('en')
+        lm_tok.tokenizer.add_special_case('<unk>', [{ORTH: '<unk>'}])
+
+        def spacy_tok(x):
+            return [tok.text for tok in lm_tok.tokenizer(x)]
+
+        lm_train = datasets.LanguageModelingDataset(os.path.join(config.file_path, config.train_f),
+                                                 TEXT, newline_eos=False)
+        lm_dev = datasets.LanguageModelingDataset(os.path.join(config.file_path, config.dev_f),
+                                               TEXT, newline_eos=False)
+
+        # load actual data
         # we have keys: 'id', 'd_words', 'd_pos', 'd_ner', 'q_words', 'q_pos', 'c_words',
         #       'label', 'in_q', 'in_c', 'lemma_in_q', 'tf', 'p_q_relation', 'p_c_relation'
         train, val, test = data.TabularDataset.splits(
@@ -64,30 +94,10 @@ class DataUtil:
 
         print('train: %d, val: %d, test: %d' % (len(train), len(val), len(test)))
 
-        # combined is only used for building vocabulary
-        combined = data.TabularDataset(
-            path=os.path.join(data_dir, combined_fname), format='json',
-            fields={'d_words': ('d_words', TEXT),
-                    'd_pos':   ('d_pos', POS),
-                    'd_ner':   ('d_ner', NER),
-                    'q_words': ('q_words', TEXT),
-                    'q_pos':   ('q_pos', POS),
-                    'c_words': ('c_words', TEXT),
-                    'label': ('label', LABEL),
-                    'in_q': ('in_q', IN_Q),
-                    'in_c': ('in_c', IN_C),
-                    'lemma_in_q': ('lemma_in_q', LEMMA_IN_Q),
-                    'lemma_in_c': ('lemma_in_c', LEMMA_IN_C),
-                    'tf': ('tf', TF),
-                    'p_q_relation': ('p_q_relation', REL),
-                    'p_c_relation': ('p_c_relation', REL)
-                    })
-
-        # TEXT.build_vocab(combined, vectors=config.vectors)
-        TEXT.build_vocab(train, val, test, vectors=config.vectors)
-        POS.build_vocab(combined)
-        NER.build_vocab(combined)
-        REL.build_vocab(combined)
+        TEXT.build_vocab(train, val, test, lm_train, lm_dev, vectors=config.vectors)
+        POS.build_vocab(train, val, test)
+        NER.build_vocab(train, val, test)
+        REL.build_vocab(train, val, test)
 
         print('vocab size: %d' % len(TEXT.vocab))
         print('pos size: %d' % len(POS.vocab))

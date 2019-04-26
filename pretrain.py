@@ -14,15 +14,15 @@ device = torch.device("cuda" if USE_CUDA else "cpu")
 print("Use CUDA:", USE_CUDA)
 
 
-my_tok = spacy.load('en')
-my_tok.tokenizer.add_special_case('<unk>', [{ORTH: '<unk>'}])
+lm_tok = spacy.load('en')
+lm_tok.tokenizer.add_special_case('<unk>', [{ORTH: '<unk>'}])
 
 
 def spacy_tok(x):
-    return [tok.text for tok in my_tok.tokenizer(x)]
+    return [tok.text for tok in lm_tok.tokenizer(x)]
 
 
-class Config:
+class LMConfig:
     batch_size = 32
     bptt_len = 60
     embed_dim = 300
@@ -40,7 +40,7 @@ class Config:
     is_train = False
 
 
-config = Config()
+config = LMConfig()
 TEXT = data.Field(lower=True, tokenize=spacy_tok)
 train = datasets.LanguageModelingDataset(os.path.join(config.file_path, config.train_f),
                                          TEXT, newline_eos=False)

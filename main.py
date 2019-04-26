@@ -77,6 +77,7 @@ if __name__ == '__main__':
     lm = LM(data_util.vocab_size, lm_config.embed_dim, lm_config.hidden_dim, data_util.embedding,
             lm_config.dropout, device).to(device)
 
+    raise Exception('here!!!')
     # define tri-an model
     # model = TriAn(data_util.embedding, data_util.embedding_pos,
     #               data_util.embedding_ner, data_util.embedding_rel, config).to(device)

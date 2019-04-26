@@ -99,6 +99,7 @@ class LMTrainUtil:
         return text.split(" ")
 
     def generate(self):
+        self.load_trained_model()
         # see some generations
         test_sentences_raw = ['I went into my bedroom and flipped the light switch',
                               'I got my keys and unlocked my car . I',

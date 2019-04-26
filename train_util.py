@@ -25,18 +25,44 @@ class TrainUtil:
             labels = labels.cpu().numpy()
             return np.mean((preds == labels).astype(float))
 
-    @staticmethod
-    def parse_batch(batch):
+    def __init__(self, train_iter, val_iter, model, device, config, TEXT):
+        self.criterion = nn.BCELoss().to(device)
+        self.optimizer = optim.Adamax(model.parameters(), lr=config.lr, weight_decay=0)
+        self.scheduler = optim.lr_scheduler.MultiStepLR(self.optimizer,
+                                                        milestones=config.milestones, gamma=config.gamma)
+        self.train_iter = train_iter
+        self.val_iter = val_iter
+        self.model = model
+        self.device = device
+        self.config = config
+        self.TEXT = TEXT
+
+    def calculate_lengths(self, words):
+        """
+
+        :param words: (batch_size, seq_len)
+        :return: (batch_size,)
+        """
+        PAD_IDX = self.TEXT.vocab.stoi['<pad>']
+        not_pad = words != PAD_IDX
+        return torch.sum(not_pad, dim=1)
+
+    def parse_batch(self, batch):
         d_words = batch.d_words
         q_words = batch.q_words
         c_words = batch.c_words
-        d_lengths = batch.d_lengths[1]
-        q_lengths = batch.q_lengths[1]
-        c_lengths = batch.c_lengths[1]
+        d_words = torch.transpose(d_words, 0, 1)
+        q_words = torch.transpose(q_words, 0, 1)
+        c_words = torch.transpose(c_words, 0, 1)
+
+        d_lengths = self.calculate_lengths(d_words)
+        q_lengths = self.calculate_lengths(q_words)
+        c_lengths = self.calculate_lengths(c_words)
 
         d_pos = batch.d_pos[0]
         d_ner = batch.d_ner[0]
         q_pos = batch.q_pos[0]
+
         in_q = batch.in_q[0].unsqueeze(dim=2).float()
         in_c = batch.in_c[0].unsqueeze(dim=2).float()
         lemma_in_q = batch.lemma_in_q[0].unsqueeze(dim=2).float()
@@ -45,9 +71,7 @@ class TrainUtil:
         p_q_relation = batch.p_q_relation[0]
         p_c_relation = batch.p_c_relation[0]
 
-        d_words = torch.transpose(d_words, 0, 1)
-        q_words = torch.transpose(q_words, 0, 1)
-        c_words = torch.transpose(c_words, 0, 1)
+
         d_pos, d_ner, q_pos = torch.transpose(d_pos, 0, 1), \
                               torch.transpose(d_ner, 0, 1), torch.transpose(q_pos, 0, 1)
 
@@ -64,17 +88,6 @@ class TrainUtil:
 
         return d_words, d_pos, d_ner, d_lengths, q_words, q_pos, q_lengths, c_words, c_lengths, \
                labels, in_q, in_c, lemma_in_q, lemma_in_c, tf, p_q_relation, p_c_relation
-
-    def __init__(self, train_iter, val_iter, model, device, config):
-        self.criterion = nn.BCELoss().to(device)
-        self.optimizer = optim.Adamax(model.parameters(), lr=config.lr, weight_decay=0)
-        self.scheduler = optim.lr_scheduler.MultiStepLR(self.optimizer,
-                                                        milestones=config.milestones, gamma=config.gamma)
-        self.train_iter = train_iter
-        self.val_iter = val_iter
-        self.model = model
-        self.device = device
-        self.config = config
 
     def train_epoch(self):
         self.scheduler.step()

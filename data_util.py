@@ -34,8 +34,6 @@ class DataUtil:
         #                             lower=False, include_lengths=True)
         TEXT = data.ReversibleField(sequential=True, tokenize=self.tokenizer,
                                     lower=False, include_lengths=False)
-        LENGTH = data.ReversibleField(sequential=True, tokenize=self.tokenizer, lower=False,
-                                      include_lengths=True) # this is only used to count seq lengths
         POS = data.ReversibleField(sequential=True, lower=False, include_lengths=True)
         NER = data.ReversibleField(sequential=True, lower=False, include_lengths=True)
         LABEL = data.Field(sequential=False, use_vocab=False)
@@ -64,14 +62,11 @@ class DataUtil:
             path=config.data_dir, train=config.train_fname,
             validation=config.dev_fname, test=config.test_fname, format='json',
             fields={'d_words': ('d_words', TEXT),
-                    'd_lengths': ('d_words', LENGTH),
                     'd_pos':   ('d_pos', POS),
                     'd_ner':   ('d_ner', NER),
                     'q_words': ('q_words', TEXT),
-                    'q_lengths': ('q_words', LENGTH),
                     'q_pos':   ('q_pos', POS),
                     'c_words': ('c_words', TEXT),
-                    'c_lengths': ('c_words', LENGTH),
                     'label': ('label', LABEL),
                     'in_q': ('in_q', IN_Q),
                     'in_c': ('in_c', IN_C),
@@ -86,7 +81,6 @@ class DataUtil:
 
         # construct vocabulary
         TEXT.build_vocab(train, val, test, lm_train, lm_dev, vectors=config.vectors)
-        LENGTH.build_vocab(train, val, test)
         POS.build_vocab(train, val, test)
         NER.build_vocab(train, val, test)
         REL.build_vocab(train, val, test)

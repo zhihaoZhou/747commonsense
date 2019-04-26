@@ -369,8 +369,11 @@ class TriAnWithLM(nn.Module):
         d_embed, q_embed, c_embed = self.embed_dropout(d_embed), self.embed_dropout(q_embed), self.embed_dropout(
             c_embed)
 
-        print('haha')
-        print(d_embed.shape)
+        print('d_embed', d_embed.shape)
+
+        _, lm_outputs, _ = self.lm(d_words)
+        print('lm_outputs', lm_outputs.shape)
+
         raise Exception()
 
         d_pos_embed, d_ner_embed, q_pos_embed = self.embedding_pos(d_pos), self.embedding_ner(

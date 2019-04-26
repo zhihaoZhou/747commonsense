@@ -64,8 +64,9 @@ class LMTrainUtil:
             if dev_perplex < best_dev_perplex:
                 best_dev_perplex = dev_perplex
                 best_epoch = epoch
-                torch.save(self.model.state_dict(), self.config.save_path)
-                print('saved best model')
+            # save recent model regardless of dev score
+            torch.save(self.model.state_dict(), self.config.save_path)
+            print('saved best model')
 
             print('epoch %d, lr %.5f, train_perplex %.4f, dev dev_perplex %.4f' %
                   (epoch, cur_lr, train_perplex, dev_perplex))

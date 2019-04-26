@@ -88,7 +88,7 @@ if __name__ == '__main__':
     #               data_util.embedding_ner, data_util.embedding_rel, config).to(device)
 
     model = TriAnWithLM(data_util.embedding, lm, data_util.embedding_pos,
-                  data_util.embedding_ner, data_util.embedding_rel, config, lm_config).to(device)
+                  data_util.embedding_ner, data_util.embedding_rel, config, lm_config, device).to(device)
 
     # train tri-an model
     train_util = TrainUtil(data_util.train_iter, data_util.val_iter, model,

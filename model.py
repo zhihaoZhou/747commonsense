@@ -332,13 +332,14 @@ class LM(nn.Module):
 
 
 class TriAnWithLM(nn.Module):
-    def __init__(self, embedding, lm, embedding_pos, embedding_ner, embedding_rel, config, lm_config):
+    def __init__(self, embedding, lm, embedding_pos, embedding_ner, embedding_rel, config, lm_config, device):
         super(TriAnWithLM, self).__init__()
         self.embedding = embedding
         self.lm = lm
         self.embedding_pos = embedding_pos
         self.embedding_ner = embedding_ner
         self.embedding_rel = embedding_rel
+        self.device = device
 
         self.d_rnn = BLSTM(config.embed_dim * 2 + config.embed_dim_pos + config.embed_dim_ner + config.
                            embed_dim_rel * 2 + config.embed_dim_value * 5 + lm_config.hidden_dim,
@@ -383,9 +384,9 @@ class TriAnWithLM(nn.Module):
         p_q_rel_embed, p_c_rel_embed = self.embed_dropout(p_q_rel_embed), self.embed_dropout(p_c_rel_embed)
 
         # get masks
-        d_mask = lengths_to_mask(d_lengths)
-        q_mask = lengths_to_mask(q_lengths)
-        c_mask = lengths_to_mask(c_lengths)
+        d_mask = lengths_to_mask(d_lengths, self.device)
+        q_mask = lengths_to_mask(q_lengths, self.device)
+        c_mask = lengths_to_mask(c_lengths, self.device)
 
         # get attention contexts
         d_on_q_contexts = self.embed_dropout(self.d_on_q_attn(d_embed, q_embed, q_mask))

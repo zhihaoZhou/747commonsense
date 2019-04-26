@@ -341,12 +341,12 @@ class TriAnWithLM(nn.Module):
         self.embedding_rel = embedding_rel
 
         self.d_rnn = BLSTM(config.embed_dim * 2 + config.embed_dim_pos + config.embed_dim_ner + config.
-                           embed_dim_rel * 2 + config.embed_dim_value * 5, config.hidden_size,
-                           config.num_layers, config.rnn_dropout_rate + lm_config.hidden_dim)
-        self.q_rnn = BLSTM(config.embed_dim + config.embed_dim_pos, config.hidden_size, config.num_layers,
-                           config.rnn_dropout_rate + lm_config.hidden_dim)
-        self.c_rnn = BLSTM(config.embed_dim * 3, config.hidden_size, config.num_layers, config.rnn_dropout_rate
-                           + lm_config.hidden_dim)
+                           embed_dim_rel * 2 + config.embed_dim_value * 5 + lm_config.hidden_dim,
+                           config.hidden_size, config.num_layers, config.rnn_dropout_rate)
+        self.q_rnn = BLSTM(config.embed_dim + config.embed_dim_pos + lm_config.hidden_dim, config.hidden_size,
+                           config.num_layers, config.rnn_dropout_rate)
+        self.c_rnn = BLSTM(config.embed_dim * 3 + lm_config.hidden_dim, config.hidden_size, config.num_layers,
+                           config.rnn_dropout_rate)
 
         self.embed_dropout = nn.Dropout(config.embed_dropout_rate)
 
@@ -370,15 +370,9 @@ class TriAnWithLM(nn.Module):
         d_embed, q_embed, c_embed = self.embed_dropout(d_embed), self.embed_dropout(q_embed), self.embed_dropout(
             c_embed)
 
-        print('d_embed', d_embed.shape)
-
         _, lm_d_outputs, _ = self.lm(d_words)
         _, lm_q_outputs, _ = self.lm(q_words)
         _, lm_c_outputs, _ = self.lm(c_words)
-
-        print('lm_outputs', lm_d_outputs.shape)
-
-        raise Exception()
 
         d_pos_embed, d_ner_embed, q_pos_embed = self.embedding_pos(d_pos), self.embedding_ner(
             d_ner), self.embedding_pos(q_pos)
@@ -408,6 +402,9 @@ class TriAnWithLM(nn.Module):
         d_rnn_outputs = self.d_rnn(d_rnn_inputs, d_lengths)
         q_rnn_outputs = self.q_rnn(q_rnn_inputs, q_lengths)
         c_rnn_outputs = self.c_rnn(c_rnn_inputs, c_lengths)
+
+        print('d_rnn_outputs', d_rnn_outputs.shape)
+        raise Exception()
 
         # get final representations
         q_rep = self.q_encode(q_rnn_outputs, q_mask)

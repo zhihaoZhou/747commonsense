@@ -77,12 +77,14 @@ if __name__ == '__main__':
     lm = LM(data_util.vocab_size, lm_config.embed_dim, lm_config.hidden_dim, data_util.embedding,
             lm_config.dropout, device).to(device)
 
-    raise Exception('here!!!')
     # define tri-an model
     # model = TriAn(data_util.embedding, data_util.embedding_pos,
     #               data_util.embedding_ner, data_util.embedding_rel, config).to(device)
+
     model = TriAnWithLM(data_util.embedding, lm, data_util.embedding_pos,
                   data_util.embedding_ner, data_util.embedding_rel, config, lm_config).to(device)
+
+    raise Exception('here!!!')
 
     # # train language model
     # lm_trian_util = LMTrainUtil(data_util.lm_train_iter, data_util.lm_dev_iter, lm, device, lm_config,
@@ -94,6 +96,3 @@ if __name__ == '__main__':
     train_util = TrainUtil(data_util.train_iter, data_util.val_iter, model,
                            device, config, data_util.TEXT)
     train_util.train_model()
-
-
-

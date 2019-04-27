@@ -28,7 +28,7 @@ class LMConfig:
     bptt_len = 60
     embed_dim = 300
     # hidden_dim = 1024
-    hidden_dim = 512
+    hidden_dim = 256
     dropout = 0.4
     lr = 10
     num_epochs = 30

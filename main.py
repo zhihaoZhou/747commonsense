@@ -31,7 +31,7 @@ class LMConfig:
     hidden_dim = 256
     dropout = 0.4
     lr = 10
-    num_epochs = 50
+    num_epochs = 30
     grad_clipping = 0.5
     data_dir = 'pretrain_data'
     train_f = 'lm.train'

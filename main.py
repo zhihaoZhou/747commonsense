@@ -28,7 +28,7 @@ class LMConfig:
     bptt_len = 60
     embed_dim = 300
     # hidden_dim = 1024
-    hidden_dim = 1024
+    hidden_dim = 512
     dropout = 0.4
     lr = 10
     num_epochs = 30
@@ -100,9 +100,9 @@ if __name__ == '__main__':
             # model = TriAn(data_util.embedding, data_util.embedding_pos,
             #               data_util.embedding_ner, data_util.embedding_rel, config).to(device)
 
-            # lm_train_util.generate()
+            lm_train_util.generate()
             model = TriAnWithLM(data_util.embedding, lm, data_util.embedding_pos,
-                          data_util.embedding_ner, data_util.embedding_rel, config, lm_config, device).to(device)
+                                data_util.embedding_ner, data_util.embedding_rel, config, lm_config, device).to(device)
 
             # train tri-an model
             train_util = TrainUtil(data_util.train_iter, data_util.val_iter, model,

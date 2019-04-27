@@ -13,6 +13,28 @@ from torch.autograd import Variable
 import math
 
 
+class LockedDropout(nn.Module):
+    def __init__(self, p=0.5):
+        super().__init__()
+        self.p = p
+
+    def forward(self, x):
+        """
+
+        :param x: (batch_size, seq_len, x_dim)
+        :return:
+        """
+        if not self.training or not self.p:
+            return x
+
+        mask = x.data.new(x.size(0), 1, x.size(2)).bernoulli_(1 - self.p)
+        mask = Variable(mask, requires_grad=False) / (1 - self.p)
+        mask = mask.expand_as(x)
+        masked = mask * x
+
+        return masked
+
+
 class BLSTM(nn.Module):
     def __init__(self, input_dim, hidden_size, num_layers, rnn_output_dropout_rate):
         super(BLSTM, self).__init__()
@@ -26,7 +48,8 @@ class BLSTM(nn.Module):
             bidirectional=True
         )
 
-        self.rnn_output_dropout = nn.Dropout(rnn_output_dropout_rate)
+        # self.rnn_output_dropout = nn.Dropout(rnn_output_dropout_rate)
+        self.rnn_output_dropout = LockedDropout(rnn_output_dropout_rate)
 
     def forward(self, inputs, lengths):
         """
@@ -186,7 +209,8 @@ class TriAn(nn.Module):
                            config.rnn_dropout_rate)
         self.c_rnn = BLSTM(config.embed_dim * 3, config.hidden_size, config.num_layers, config.rnn_dropout_rate)
 
-        self.embed_dropout = nn.Dropout(config.embed_dropout_rate)
+        # self.embed_dropout = nn.Dropout(config.embed_dropout_rate)
+        self.embed_dropout = LockedDropout(config.embed_dropout_rate)
 
         self.d_on_q_attn = SeqAttnContext(config.embed_dim)
         self.c_on_q_attn = SeqAttnContext(config.embed_dim)
@@ -249,26 +273,7 @@ class TriAn(nn.Module):
         return self.sigmoid(logits)
 
 
-class LockedDropout(nn.Module):
-    def __init__(self, p=0.5):
-        super().__init__()
-        self.p = p
 
-    def forward(self, x):
-        """
-
-        :param x: (batch_size, seq_len, x_dim)
-        :return:
-        """
-        if not self.training or not self.p:
-            return x
-
-        mask = x.data.new(x.size(0), 1, x.size(2)).bernoulli_(1 - self.p)
-        mask = Variable(mask, requires_grad=False) / (1 - self.p)
-        mask = mask.expand_as(x)
-        masked = mask * x
-
-        return masked
 
 
 class LM(nn.Module):
@@ -349,7 +354,9 @@ class TriAnWithLM(nn.Module):
         self.c_rnn = BLSTM(config.embed_dim * 3 + lm_config.hidden_dim, config.hidden_size, config.num_layers,
                            config.rnn_dropout_rate)
 
-        self.embed_dropout = nn.Dropout(config.embed_dropout_rate)
+        # self.embed_dropout = nn.Dropout(config.embed_dropout_rate)
+        self.embed_dropout = LockedDropout(config.embed_dropout_rate)
+
 
         self.d_on_q_attn = SeqAttnContext(config.embed_dim)
         self.c_on_q_attn = SeqAttnContext(config.embed_dim)

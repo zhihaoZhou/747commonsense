@@ -48,8 +48,8 @@ class BLSTM(nn.Module):
             bidirectional=True
         )
 
-        # self.rnn_output_dropout = nn.Dropout(rnn_output_dropout_rate)
-        self.rnn_output_dropout = LockedDropout(rnn_output_dropout_rate)
+        self.rnn_output_dropout = nn.Dropout(rnn_output_dropout_rate)
+        # self.rnn_output_dropout = LockedDropout(rnn_output_dropout_rate)
 
     def forward(self, inputs, lengths):
         """
@@ -92,11 +92,61 @@ def lengths_to_mask(lengths, device, dtype=torch.uint8):
     return mask
 
 
+# class SeqAttnContext(nn.Module):
+#     def __init__(self, embed_dim):
+#         super(SeqAttnContext, self).__init__()
+#
+#         self.proj = nn.Sequential(
+#             nn.Linear(embed_dim, embed_dim),
+#             nn.ReLU()
+#         )
+#
+#
+#
+#         self.softmax = nn.Softmax(dim=2)
+#
+#     def forward(self, x, y, y_mask):
+#         """
+#         calculate context vectors for x on y using attention on y
+#
+#         :param x: (batch_size, x_seq_len, embed_dim)
+#         :param y: (batch_size, y_seq_len, embed_dim)
+#         :param y_lengths: (batch_size)
+#         :return: (batch_size, x_seq_len, embed_dim)
+#         """
+#         x_proj = self.proj(x)
+#         y_proj = self.proj(y)
+#
+#         scores = x_proj.bmm(y_proj.transpose(2, 1))
+#
+#         # mask scores
+#         y_mask = y_mask.unsqueeze(1).expand(scores.size())
+#
+#         scores.data.masked_fill_(y_mask.data, -float('inf'))
+#         weights = self.softmax(scores)
+#
+#         # Take weighted average
+#         contexts = weights.bmm(y)
+#         # here, instead of using y, maybe use another projection of y in the future
+#
+#         return contexts
+
+
 class SeqAttnContext(nn.Module):
     def __init__(self, embed_dim):
         super(SeqAttnContext, self).__init__()
 
-        self.proj = nn.Sequential(
+        self.query_proj = nn.Sequential(
+            nn.Linear(embed_dim, embed_dim),
+            nn.ReLU()
+        )
+
+        self.key_proj = nn.Sequential(
+            nn.Linear(embed_dim, embed_dim),
+            nn.ReLU()
+        )
+
+        self.val_proj = nn.Sequential(
             nn.Linear(embed_dim, embed_dim),
             nn.ReLU()
         )
@@ -112,8 +162,8 @@ class SeqAttnContext(nn.Module):
         :param y_lengths: (batch_size)
         :return: (batch_size, x_seq_len, embed_dim)
         """
-        x_proj = self.proj(x)
-        y_proj = self.proj(y)
+        x_proj = self.query_proj(x)
+        y_proj = self.key_proj(y)
 
         scores = x_proj.bmm(y_proj.transpose(2, 1))
 
@@ -124,8 +174,7 @@ class SeqAttnContext(nn.Module):
         weights = self.softmax(scores)
 
         # Take weighted average
-        contexts = weights.bmm(y)
-        # here, instead of using y, maybe use another projection of y in the future
+        contexts = weights.bmm(self.val_proj(y))
 
         return contexts
 
@@ -209,8 +258,8 @@ class TriAn(nn.Module):
                            config.rnn_dropout_rate)
         self.c_rnn = BLSTM(config.embed_dim * 3, config.hidden_size, config.num_layers, config.rnn_dropout_rate)
 
-        # self.embed_dropout = nn.Dropout(config.embed_dropout_rate)
-        self.embed_dropout = LockedDropout(config.embed_dropout_rate)
+        self.embed_dropout = nn.Dropout(config.embed_dropout_rate)
+        # self.embed_dropout = LockedDropout(config.embed_dropout_rate)
 
         self.d_on_q_attn = SeqAttnContext(config.embed_dim)
         self.c_on_q_attn = SeqAttnContext(config.embed_dim)
@@ -271,9 +320,6 @@ class TriAn(nn.Module):
 
         logits = dWc + qWc
         return self.sigmoid(logits)
-
-
-
 
 
 class LM(nn.Module):
@@ -354,8 +400,8 @@ class TriAnWithLM(nn.Module):
         self.c_rnn = BLSTM(config.embed_dim * 3 + lm_config.hidden_dim, config.hidden_size, config.num_layers,
                            config.rnn_dropout_rate)
 
-        # self.embed_dropout = nn.Dropout(config.embed_dropout_rate)
-        self.embed_dropout = LockedDropout(config.embed_dropout_rate)
+        self.embed_dropout = nn.Dropout(config.embed_dropout_rate)
+        # self.embed_dropout = LockedDropout(config.embed_dropout_rate)
 
 
         self.d_on_q_attn = SeqAttnContext(config.embed_dim)

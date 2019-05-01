@@ -99,7 +99,7 @@ if __name__ == '__main__':
         elif mode == 'train_tri-an':
             # define tri-an model
             model = TriAn(data_util.embedding, data_util.embedding_pos,
-                          data_util.embedding_ner, data_util.embedding_rel, config).to(device)
+                          data_util.embedding_ner, data_util.embedding_rel, config, device).to(device)
 
             # lm_train_util.generate()
             # model = TriAnWithLM(data_util.embedding, lm, data_util.embedding_pos,

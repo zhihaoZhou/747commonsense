@@ -444,10 +444,16 @@ class TriAnWithLM(nn.Module):
         self.embedding_rel = embedding_rel
         self.device = device
 
-        self.d_rnn = BLSTM(config.embed_dim * 2 + config.embed_dim_pos + config.embed_dim_ner + config.
-                           embed_dim_rel * 2 + config.embed_dim_value * 5 + lm_config.hidden_dim,
+        # self.d_rnn = BLSTM(config.embed_dim * 2 + config.embed_dim_pos + config.embed_dim_ner + config.
+        #                    embed_dim_rel * 2 + config.embed_dim_value * 5 + lm_config.hidden_dim,
+        #                    config.hidden_size, config.num_layers, config.rnn_dropout_rate)
+        # self.q_rnn = BLSTM(config.embed_dim + config.embed_dim_pos + lm_config.hidden_dim, config.hidden_size,
+        #                    config.num_layers, config.rnn_dropout_rate)
+        # self.c_rnn = BLSTM(config.embed_dim * 3 + lm_config.hidden_dim, config.hidden_size, config.num_layers,
+        #                    config.rnn_dropout_rate)
+        self.d_rnn = BLSTM(config.embed_dim * 2 + lm_config.hidden_dim,
                            config.hidden_size, config.num_layers, config.rnn_dropout_rate)
-        self.q_rnn = BLSTM(config.embed_dim + config.embed_dim_pos + lm_config.hidden_dim, config.hidden_size,
+        self.q_rnn = BLSTM(config.embed_dim + lm_config.hidden_dim, config.hidden_size,
                            config.num_layers, config.rnn_dropout_rate)
         self.c_rnn = BLSTM(config.embed_dim * 3 + lm_config.hidden_dim, config.hidden_size, config.num_layers,
                            config.rnn_dropout_rate)
@@ -458,9 +464,6 @@ class TriAnWithLM(nn.Module):
         self.d_on_q_attn = SeqAttnContext(config.embed_dim)
         self.c_on_q_attn = SeqAttnContext(config.embed_dim)
         self.c_on_d_attn = SeqAttnContext(config.embed_dim)
-        # self.d_on_q_attn = SeqAttnContext(config.embed_dim)
-        # self.c_on_q_attn = SeqAttnContextMLP(config.embed_dim)
-        # self.c_on_d_attn = SeqAttnContext(config.embed_dim)
 
 
         self.d_on_q_encode = BilinearAttnEncoder(config.hidden_size * 2, config.hidden_size * 2)
@@ -486,14 +489,14 @@ class TriAnWithLM(nn.Module):
         lm_d_outputs, lm_q_outputs, lm_c_outputs = lm_d_outputs.detach(), \
                                                    lm_q_outputs.detach(), lm_c_outputs.detach()
 
-        # get other features
-        d_pos_embed, d_ner_embed, q_pos_embed = self.embedding_pos(d_pos), self.embedding_ner(
-            d_ner), self.embedding_pos(q_pos)
-        d_pos_embed, d_ner_embed, q_pos_embed = self.embed_dropout(d_pos_embed), self.embed_dropout(
-            d_ner_embed), self.embed_dropout(q_pos_embed)
-
-        p_q_rel_embed, p_c_rel_embed = self.embedding_rel(p_q_relation), self.embedding_rel(p_c_relation)
-        p_q_rel_embed, p_c_rel_embed = self.embed_dropout(p_q_rel_embed), self.embed_dropout(p_c_rel_embed)
+        # # get other features
+        # d_pos_embed, d_ner_embed, q_pos_embed = self.embedding_pos(d_pos), self.embedding_ner(
+        #     d_ner), self.embedding_pos(q_pos)
+        # d_pos_embed, d_ner_embed, q_pos_embed = self.embed_dropout(d_pos_embed), self.embed_dropout(
+        #     d_ner_embed), self.embed_dropout(q_pos_embed)
+        #
+        # p_q_rel_embed, p_c_rel_embed = self.embedding_rel(p_q_relation), self.embedding_rel(p_c_relation)
+        # p_q_rel_embed, p_c_rel_embed = self.embed_dropout(p_q_rel_embed), self.embed_dropout(p_c_rel_embed)
 
         # get masks
         d_mask = lengths_to_mask(d_lengths, self.device)
@@ -506,10 +509,13 @@ class TriAnWithLM(nn.Module):
         c_on_d_contexts = self.embed_dropout(self.c_on_d_attn(c_embed, d_embed, d_mask))
 
         # form final inputs for rnns
-        d_rnn_inputs = torch.cat([d_embed, d_on_q_contexts, d_pos_embed, d_ner_embed, \
-                                  p_q_rel_embed, p_c_rel_embed, in_q, in_c, lemma_in_q, lemma_in_c,
-                                  tf, lm_d_outputs], dim=2)
-        q_rnn_inputs = torch.cat([q_embed, q_pos_embed, lm_q_outputs], dim=2)
+        # d_rnn_inputs = torch.cat([d_embed, d_on_q_contexts, d_pos_embed, d_ner_embed, \
+        #                           p_q_rel_embed, p_c_rel_embed, in_q, in_c, lemma_in_q, lemma_in_c,
+        #                           tf, lm_d_outputs], dim=2)
+        # q_rnn_inputs = torch.cat([q_embed, q_pos_embed, lm_q_outputs], dim=2)
+        # c_rnn_inputs = torch.cat([c_embed, c_on_q_contexts, c_on_d_contexts, lm_c_outputs], dim=2)
+        d_rnn_inputs = torch.cat([d_embed, d_on_q_contexts, lm_d_outputs], dim=2)
+        q_rnn_inputs = torch.cat([q_embed, lm_q_outputs], dim=2)
         c_rnn_inputs = torch.cat([c_embed, c_on_q_contexts, c_on_d_contexts, lm_c_outputs], dim=2)
 
         # calculate rnn outputs
@@ -523,7 +529,6 @@ class TriAnWithLM(nn.Module):
         d_rep = self.d_on_q_encode(d_rnn_outputs, q_rep, d_mask)
 
         # add dropout here!!!!!
-
 
         dWc = self.d_c_bilinear(d_rep, c_rep)
         qWc = self.q_c_bilinear(q_rep, c_rep)

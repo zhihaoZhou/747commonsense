@@ -207,8 +207,11 @@ class SeqAttnContext(nn.Module):
         x_repeated = x.unsqueeze(2).repeat([1, 1, y_len, 1])
         y_repeated = y.unsqueeze(1).repeat([1, x_len, 1, 1])
         x_y_repeated_cat = torch.cat([x_repeated, y_repeated], dim=3)
+        print('x_y_repeated_cat', x_y_repeated_cat.shape)
 
         scores = self.mlp(x_y_repeated_cat)
+
+        print('scores', scores.shape)
 
         # mask scores
         y_mask = y_mask.unsqueeze(1).expand(scores.size())

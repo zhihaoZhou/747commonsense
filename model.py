@@ -542,12 +542,9 @@ class TriAnWithLM(nn.Module):
         self.embed_dropout = nn.Dropout(config.embed_dropout_rate)
         # self.embed_dropout = LockedDropout(config.embed_dropout_rate)
 
-        self.d_on_q_attn = SeqAttnContext(config.embed_dim)
-        self.c_on_q_attn = SeqAttnContext(config.embed_dim)
-        self.c_on_d_attn = SeqAttnContext(config.embed_dim)
-        # self.d_on_q_attn = SeqAttnContext(config.embed_dim)
-        # self.c_on_q_attn = SeqAttnContextMLP(config.embed_dim)
-        # self.c_on_d_attn = SeqAttnContext(config.embed_dim)
+        self.d_on_q_attn = SeqAttnContext(config.embed_dim+lm_config.hidden_dim)
+        self.c_on_q_attn = SeqAttnContext(config.embed_dim+lm_config.hidden_dim)
+        self.c_on_d_attn = SeqAttnContext(config.embed_dim+lm_config.hidden_dim)
 
 
         self.d_on_q_encode = BilinearAttnEncoder(config.hidden_size * 2, config.hidden_size * 2)

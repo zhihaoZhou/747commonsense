@@ -55,7 +55,7 @@ class Config:
     embed_dim_rel = 10
     vectors = "glove.840B.300d"
     # hidden_size = 96
-    hidden_size = 128
+    hidden_size = 200
     num_layers = 1
     rnn_dropout_rate = 0
     embed_dropout_rate = 0.4

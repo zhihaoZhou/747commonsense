@@ -48,8 +48,8 @@ class BLSTM(nn.Module):
             bidirectional=True
         )
 
-        self.rnn_output_dropout = nn.Dropout(rnn_output_dropout_rate)
-        # self.rnn_output_dropout = LockedDropout(rnn_output_dropout_rate)
+        # self.rnn_output_dropout = nn.Dropout(rnn_output_dropout_rate)
+        self.rnn_output_dropout = LockedDropout(rnn_output_dropout_rate)
 
     def forward(self, inputs, lengths):
         """

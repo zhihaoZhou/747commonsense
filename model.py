@@ -92,44 +92,46 @@ def lengths_to_mask(lengths, device, dtype=torch.uint8):
     return mask
 
 
-# class SeqAttnContext(nn.Module):
-#     def __init__(self, embed_dim):
-#         super(SeqAttnContext, self).__init__()
-#
-#         self.proj = nn.Sequential(
-#             nn.Linear(embed_dim, embed_dim),
-#             nn.ReLU()
-#         )
-#
-#
-#
-#         self.softmax = nn.Softmax(dim=2)
-#
-#     def forward(self, x, y, y_mask):
-#         """
-#         calculate context vectors for x on y using attention on y
-#
-#         :param x: (batch_size, x_seq_len, embed_dim)
-#         :param y: (batch_size, y_seq_len, embed_dim)
-#         :param y_lengths: (batch_size)
-#         :return: (batch_size, x_seq_len, embed_dim)
-#         """
-#         x_proj = self.proj(x)
-#         y_proj = self.proj(y)
-#
-#         scores = x_proj.bmm(y_proj.transpose(2, 1))
-#
-#         # mask scores
-#         y_mask = y_mask.unsqueeze(1).expand(scores.size())
-#
-#         scores.data.masked_fill_(y_mask.data, -float('inf'))
-#         weights = self.softmax(scores)
-#
-#         # Take weighted average
-#         contexts = weights.bmm(y)
-#         # here, instead of using y, maybe use another projection of y in the future
-#
-#         return contexts
+class SeqAttnContext(nn.Module):
+    def __init__(self, embed_dim):
+        super(SeqAttnContext, self).__init__()
+
+        self.proj = nn.Sequential(
+            nn.Linear(embed_dim, embed_dim),
+            nn.ReLU()
+        )
+
+
+
+        self.softmax = nn.Softmax(dim=2)
+
+    def forward(self, x, y, y_mask):
+        """
+        calculate context vectors for x on y using attention on y
+
+        :param x: (batch_size, x_seq_len, embed_dim)
+        :param y: (batch_size, y_seq_len, embed_dim)
+        :param y_lengths: (batch_size)
+        :return: (batch_size, x_seq_len, embed_dim)
+        """
+        x_proj = self.proj(x)
+        y_proj = self.proj(y)
+
+        scores = x_proj.bmm(y_proj.transpose(2, 1))
+        print(scores.shape)
+        raise Exception('debug')
+
+        # mask scores
+        y_mask = y_mask.unsqueeze(1).expand(scores.size())
+
+        scores.data.masked_fill_(y_mask.data, -float('inf'))
+        weights = self.softmax(scores)
+
+        # Take weighted average
+        contexts = weights.bmm(y)
+        # here, instead of using y, maybe use another projection of y in the future
+
+        return contexts
 
 
 # class SeqAttnContext(nn.Module):
@@ -179,51 +181,51 @@ def lengths_to_mask(lengths, device, dtype=torch.uint8):
 #         return contexts
 
 
-class SeqAttnContext(nn.Module):
-    def __init__(self, embed_dim):
-        super(SeqAttnContext, self).__init__()
-
-        self.mlp = nn.Sequential(
-            nn.Linear(embed_dim * 2, embed_dim),
-            nn.ReLU(),
-            nn.Linear(embed_dim, 1)
-        )
-
-        self.softmax = nn.Softmax(dim=2)
-
-    def forward(self, x, y, y_mask):
-        """
-        calculate context vectors for x on y using attention on y
-
-        :param x: (batch_size, x_seq_len, embed_dim)
-        :param y: (batch_size, y_seq_len, embed_dim)
-        :param y_lengths: (batch_size)
-        :return: (batch_size, x_seq_len, embed_dim)
-        """
-
-        x_len = x.shape[1]
-        y_len = y.shape[1]
-
-        x_repeated = x.unsqueeze(2).repeat([1, 1, y_len, 1])
-        y_repeated = y.unsqueeze(1).repeat([1, x_len, 1, 1])
-        x_y_repeated_cat = torch.cat([x_repeated, y_repeated], dim=3)
-        print('x_y_repeated_cat', x_y_repeated_cat.shape)
-
-        scores = self.mlp(x_y_repeated_cat)
-
-        print('scores', scores.shape)
-
-        # mask scores
-        y_mask = y_mask.unsqueeze(1).expand(scores.size())
-
-        scores.data.masked_fill_(y_mask.data, -float('inf'))
-        weights = self.softmax(scores)
-
-        # Take weighted average
-        contexts = weights.bmm(y)
-        # here, instead of using y, maybe use another projection of y in the future
-
-        return contexts
+# class SeqAttnContext(nn.Module):
+#     def __init__(self, embed_dim):
+#         super(SeqAttnContext, self).__init__()
+#
+#         self.mlp = nn.Sequential(
+#             nn.Linear(embed_dim * 2, embed_dim),
+#             nn.ReLU(),
+#             nn.Linear(embed_dim, 1)
+#         )
+#
+#         self.softmax = nn.Softmax(dim=2)
+#
+#     def forward(self, x, y, y_mask):
+#         """
+#         calculate context vectors for x on y using attention on y
+#
+#         :param x: (batch_size, x_seq_len, embed_dim)
+#         :param y: (batch_size, y_seq_len, embed_dim)
+#         :param y_lengths: (batch_size)
+#         :return: (batch_size, x_seq_len, embed_dim)
+#         """
+#
+#         x_len = x.shape[1]
+#         y_len = y.shape[1]
+#
+#         x_repeated = x.unsqueeze(2).repeat([1, 1, y_len, 1])
+#         y_repeated = y.unsqueeze(1).repeat([1, x_len, 1, 1])
+#         x_y_repeated_cat = torch.cat([x_repeated, y_repeated], dim=3)
+#         print('x_y_repeated_cat', x_y_repeated_cat.shape)
+#
+#         scores = self.mlp(x_y_repeated_cat)
+#
+#         print('scores', scores.shape)
+#
+#         # mask scores
+#         y_mask = y_mask.unsqueeze(1).expand(scores.size())
+#
+#         scores.data.masked_fill_(y_mask.data, -float('inf'))
+#         weights = self.softmax(scores)
+#
+#         # Take weighted average
+#         contexts = weights.bmm(y)
+#         # here, instead of using y, maybe use another projection of y in the future
+#
+#         return contexts
 
 
 class BilinearAttnEncoder(nn.Module):

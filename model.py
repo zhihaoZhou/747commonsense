@@ -181,7 +181,7 @@ class SeqAttnContext(nn.Module):
 
 class SeqAttnContextMLP(nn.Module):
     def __init__(self, embed_dim):
-        super(SeqAttnContext, self).__init__()
+        super(SeqAttnContextMLP, self).__init__()
 
         self.mlp = nn.Sequential(
             nn.Linear(embed_dim * 2, embed_dim),

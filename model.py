@@ -471,14 +471,23 @@ class PositionalEncoder(nn.Module):
         pe = pe.unsqueeze(0)
         self.register_buffer('pe', pe)
 
+    # def forward(self, x):
+    #     # make embeddings relatively larger
+    #     x = x * math.sqrt(self.d_model)
+    #     # add constant to embedding
+    #     seq_len = x.size(1)
+    #     x = x + Variable(self.pe[:, :seq_len], \
+    #                      requires_grad=False).cuda()
+    #     return x
+
     def forward(self, x):
         # make embeddings relatively larger
         x = x * math.sqrt(self.d_model)
         # add constant to embedding
         seq_len = x.size(1)
-        x = x + Variable(self.pe[:, :seq_len], \
+        ans = Variable(self.pe[:, :seq_len], \
                          requires_grad=False).cuda()
-        return x
+        return ans
 
 
 # class TriAnWithLM(nn.Module):
@@ -617,9 +626,9 @@ class TriAnWithLMMultiHop(nn.Module):
         self.c_on_q_attn = SeqAttnContext(config.embed_dim)
         self.c_on_d_attn = SeqAttnContext(config.embed_dim)
 
-        self.d_on_q_attn_2 = SeqAttnContextSecondHop(2*config.embed_dim, config.embed_dim, config.embed_dim)
-        self.c_on_q_attn_2 = SeqAttnContextSecondHop(3*config.embed_dim, config.embed_dim, config.embed_dim)
-        self.c_on_d_attn_2 = SeqAttnContextSecondHop(3*config.embed_dim, 2*config.embed_dim, config.embed_dim)
+        self.d_on_q_attn_2 = SeqAttnContextSecondHop(3*config.embed_dim, 2*config.embed_dim, config.embed_dim)
+        self.c_on_q_attn_2 = SeqAttnContextSecondHop(4*config.embed_dim, 2*config.embed_dim, config.embed_dim)
+        self.c_on_d_attn_2 = SeqAttnContextSecondHop(4*config.embed_dim, 3*config.embed_dim, config.embed_dim)
 
         self.d_on_q_encode = BilinearAttnEncoder(config.hidden_size * 2, config.hidden_size * 2)
         self.q_encode = SelfAttnEncoder(config.hidden_size * 2)
@@ -637,11 +646,11 @@ class TriAnWithLMMultiHop(nn.Module):
         d_embed, q_embed, c_embed = self.embed_dropout(d_embed), self.embed_dropout(q_embed), self.embed_dropout(
             c_embed)
 
-        # positional encoding
-        d_embed, q_embed, c_embed = self.pe(d_embed), self.pe(q_embed), self.pe(c_embed)
-        # print('d_embed', d_embed.shape)
-        # print('q_embed', q_embed.shape)
-        # print('c_embed', c_embed.shape)
+        d_pe, q_pe, c_pe = self.pe(d_embed), self.pe(q_embed), self.pe(c_embed)
+
+        print('d_embed', d_embed.shape)
+        print('q_embed', q_embed.shape)
+        print('c_embed', c_embed.shape)
 
         # get lm outputs
         _, lm_d_outputs, _ = self.lm(d_words)
@@ -673,13 +682,14 @@ class TriAnWithLMMultiHop(nn.Module):
         # c_on_d_contexts = self.c_on_d_attn(c_embed, d_embed, d_mask)
 
         # second hop attention
-        d_embed = torch.cat([d_embed, d_on_q_contexts], dim=2)  # feature dim is 2*embed_size
-        c_embed = torch.cat([c_embed, c_on_d_contexts, c_on_q_contexts], dim=2)  # feature dim is 3*embed_size
+        d_embed = torch.cat([d_embed, d_on_q_contexts, d_pe], dim=2)  # feature dim is 3*embed_size
+        q_embed = torch.cat([q_embed, q_pe], dim=2) # feature dim is 2*embed
+        c_embed = torch.cat([c_embed, c_on_d_contexts, c_on_q_contexts, c_pe], dim=2)  # feature dim is 4*embed_size
 
-        # print('~' * 80)
-        # print('d_embed', d_embed.shape)
-        # print('q_embed', q_embed.shape)
-        # print('c_embed', c_embed.shape)
+        print('~' * 80)
+        print('d_embed', d_embed.shape)
+        print('q_embed', q_embed.shape)
+        print('c_embed', c_embed.shape)
 
         d_on_q_contexts2 = self.embed_dropout(self.d_on_q_attn_2(d_embed, q_embed, q_mask))
         c_on_q_contexts2 = self.embed_dropout(self.c_on_q_attn_2(c_embed, q_embed, q_mask))
@@ -691,11 +701,11 @@ class TriAnWithLMMultiHop(nn.Module):
         d_embed = torch.cat([d_embed, d_on_q_contexts2], dim=2)  # feature dim is 3*embed_size
         c_embed = torch.cat([c_embed, c_on_d_contexts2, c_on_q_contexts2], dim=2)  # feature dim is 5*embed_size
 
-        # print('~' * 80)
-        # print('d_embed', d_embed.shape)
-        # print('q_embed', q_embed.shape)
-        # print('c_embed', c_embed.shape)
-        # raise Exception()
+        print('~' * 80)
+        print('d_embed', d_embed.shape)
+        print('q_embed', q_embed.shape)
+        print('c_embed', c_embed.shape)
+        raise Exception()
 
         # form final inputs for rnns
         # d_rnn_inputs = torch.cat([d_embed, d_on_q_contexts, d_pos_embed, d_ner_embed, \

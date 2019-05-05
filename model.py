@@ -603,13 +603,6 @@ class TriAnWithLMMultiHop(nn.Module):
         self.embedding_rel = embedding_rel
         self.device = device
 
-        # self.d_rnn = BLSTM(config.embed_dim * 2 + config.embed_dim_pos + config.embed_dim_ner + config.
-        #                    embed_dim_rel * 2 + config.embed_dim_value * 5 + lm_config.hidden_dim,
-        #                    config.hidden_size, config.num_layers, config.rnn_dropout_rate)
-        # self.q_rnn = BLSTM(config.embed_dim + config.embed_dim_pos + lm_config.hidden_dim, config.hidden_size,
-        #                    config.num_layers, config.rnn_dropout_rate)
-        # self.c_rnn = BLSTM(config.embed_dim * 3 + lm_config.hidden_dim, config.hidden_size, config.num_layers,
-        #                    config.rnn_dropout_rate)
         self.d_rnn = BLSTM(config.embed_dim * 4 + lm_config.hidden_dim,
                            config.hidden_size, config.num_layers, config.rnn_dropout_rate)
         self.q_rnn = BLSTM(config.embed_dim * 2 + lm_config.hidden_dim, config.hidden_size,
@@ -662,15 +655,6 @@ class TriAnWithLMMultiHop(nn.Module):
         lm_d_outputs, lm_q_outputs, lm_c_outputs = lm_d_outputs.detach(), \
                                                    lm_q_outputs.detach(), lm_c_outputs.detach()
 
-        # # get other features
-        # d_pos_embed, d_ner_embed, q_pos_embed = self.embedding_pos(d_pos), self.embedding_ner(
-        #     d_ner), self.embedding_pos(q_pos)
-        # d_pos_embed, d_ner_embed, q_pos_embed = self.embed_dropout(d_pos_embed), self.embed_dropout(
-        #     d_ner_embed), self.embed_dropout(q_pos_embed)
-        #
-        # p_q_rel_embed, p_c_rel_embed = self.embedding_rel(p_q_relation), self.embedding_rel(p_c_relation)
-        # p_q_rel_embed, p_c_rel_embed = self.embed_dropout(p_q_rel_embed), self.embed_dropout(p_c_rel_embed)
-
         # get masks
         d_mask = lengths_to_mask(d_lengths, self.device)
         q_mask = lengths_to_mask(q_lengths, self.device)
@@ -711,11 +695,6 @@ class TriAnWithLMMultiHop(nn.Module):
         # raise Exception()
 
         # form final inputs for rnns
-        # d_rnn_inputs = torch.cat([d_embed, d_on_q_contexts, d_pos_embed, d_ner_embed, \
-        #                           p_q_rel_embed, p_c_rel_embed, in_q, in_c, lemma_in_q, lemma_in_c,
-        #                           tf, lm_d_outputs], dim=2)
-        # q_rnn_inputs = torch.cat([q_embed, q_pos_embed, lm_q_outputs], dim=2)
-        # c_rnn_inputs = torch.cat([c_embed, c_on_q_contexts, c_on_d_contexts, lm_c_outputs], dim=2)
         d_rnn_inputs = torch.cat([d_embed, lm_d_outputs], dim=2)
         q_rnn_inputs = torch.cat([q_embed, lm_q_outputs], dim=2)
         c_rnn_inputs = torch.cat([c_embed, lm_c_outputs], dim=2)

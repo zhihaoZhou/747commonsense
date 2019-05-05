@@ -648,6 +648,9 @@ class TriAnWithLMMultiHop(nn.Module):
 
         d_pe, q_pe, c_pe = self.pe(d_embed), self.pe(q_embed), self.pe(c_embed)
 
+        print('d_embed', d_embed.shape)
+        print('q_embed', q_embed.shape)
+        print('c_embed', c_embed.shape)
         print('d_pe', d_pe.shape)
         print('q_pe', q_pe.shape)
         print('c_pe', c_pe.shape)

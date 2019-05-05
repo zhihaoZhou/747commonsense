@@ -452,33 +452,33 @@ class LM(nn.Module):
         return decoded, outputs, hidden
 
 
-# # refer to https://towardsdatascience.com/how-to-code-the-transformer-in-pytorch-24db27c8f9ec
-# class PositionalEncoder(nn.Module):
-#     def __init__(self, d_model, max_seq_len=80):
-#         super().__init__()
-#         self.d_model = d_model
-#
-#         # create constant 'pe' matrix with values dependant on
-#         # pos and i
-#         pe = torch.zeros(max_seq_len, d_model)
-#         for pos in range(max_seq_len):
-#             for i in range(0, d_model, 2):
-#                 pe[pos, i] = \
-#                     math.sin(pos / (10000 ** ((2 * i) / d_model)))
-#                 pe[pos, i + 1] = \
-#                     math.cos(pos / (10000 ** ((2 * (i + 1)) / d_model)))
-#
-#         pe = pe.unsqueeze(0)
-#         self.register_buffer('pe', pe)
-#
-#     def forward(self, x):
-#         # make embeddings relatively larger
-#         x = x * math.sqrt(self.d_model)
-#         # add constant to embedding
-#         seq_len = x.size(1)
-#         x = x + Variable(self.pe[:, :seq_len], \
-#                          requires_grad=False).cuda()
-#         return x
+# refer to https://towardsdatascience.com/how-to-code-the-transformer-in-pytorch-24db27c8f9ec
+class PositionalEncoder(nn.Module):
+    def __init__(self, d_model, max_seq_len=500):
+        super(PositionalEncoder, self).__init__()
+        self.d_model = d_model
+
+        # create constant 'pe' matrix with values dependant on
+        # pos and i
+        pe = torch.zeros(max_seq_len, d_model)
+        for pos in range(max_seq_len):
+            for i in range(0, d_model, 2):
+                pe[pos, i] = \
+                    math.sin(pos / (10000 ** ((2 * i) / d_model)))
+                pe[pos, i + 1] = \
+                    math.cos(pos / (10000 ** ((2 * (i + 1)) / d_model)))
+
+        pe = pe.unsqueeze(0)
+        self.register_buffer('pe', pe)
+
+    def forward(self, x):
+        # make embeddings relatively larger
+        x = x * math.sqrt(self.d_model)
+        # add constant to embedding
+        seq_len = x.size(1)
+        x = x + Variable(self.pe[:, :seq_len], \
+                         requires_grad=False).cuda()
+        return x
 
 
 # class TriAnWithLM(nn.Module):
@@ -611,6 +611,8 @@ class TriAnWithLMMultiHop(nn.Module):
         # self.embed_dropout = nn.Dropout(config.embed_dropout_rate)
         self.embed_dropout = LockedDropout(config.embed_dropout_rate)
 
+        self.pe = PositionalEncoder(config.embed_dim)
+
         self.d_on_q_attn = SeqAttnContext(config.embed_dim)
         self.c_on_q_attn = SeqAttnContext(config.embed_dim)
         self.c_on_d_attn = SeqAttnContext(config.embed_dim)
@@ -635,6 +637,8 @@ class TriAnWithLMMultiHop(nn.Module):
         d_embed, q_embed, c_embed = self.embed_dropout(d_embed), self.embed_dropout(q_embed), self.embed_dropout(
             c_embed)
 
+        # positional encoding
+        d_embed, q_embed, c_embed = self.pe(d_embed), self.pe(q_embed), self.pe(c_embed)
         # print('d_embed', d_embed.shape)
         # print('q_embed', q_embed.shape)
         # print('c_embed', c_embed.shape)
@@ -677,12 +681,12 @@ class TriAnWithLMMultiHop(nn.Module):
         # print('q_embed', q_embed.shape)
         # print('c_embed', c_embed.shape)
 
-        # d_on_q_contexts2 = self.embed_dropout(self.d_on_q_attn_2(d_embed, q_embed, q_mask))
-        # c_on_q_contexts2 = self.embed_dropout(self.c_on_q_attn_2(c_embed, q_embed, q_mask))
-        # c_on_d_contexts2 = self.embed_dropout(self.c_on_d_attn_2(c_embed, d_embed, d_mask))
-        d_on_q_contexts2 = self.d_on_q_attn_2(d_embed, q_embed, q_mask)
-        c_on_q_contexts2 = self.c_on_q_attn_2(c_embed, q_embed, q_mask)
-        c_on_d_contexts2 = self.c_on_d_attn_2(c_embed, d_embed, d_mask)
+        d_on_q_contexts2 = self.embed_dropout(self.d_on_q_attn_2(d_embed, q_embed, q_mask))
+        c_on_q_contexts2 = self.embed_dropout(self.c_on_q_attn_2(c_embed, q_embed, q_mask))
+        c_on_d_contexts2 = self.embed_dropout(self.c_on_d_attn_2(c_embed, d_embed, d_mask))
+        # d_on_q_contexts2 = self.d_on_q_attn_2(d_embed, q_embed, q_mask)
+        # c_on_q_contexts2 = self.c_on_q_attn_2(c_embed, q_embed, q_mask)
+        # c_on_d_contexts2 = self.c_on_d_attn_2(c_embed, d_embed, d_mask)
 
         d_embed = torch.cat([d_embed, d_on_q_contexts2], dim=2)  # feature dim is 3*embed_size
         c_embed = torch.cat([c_embed, c_on_d_contexts2, c_on_q_contexts2], dim=2)  # feature dim is 5*embed_size

@@ -132,7 +132,7 @@ class SeqAttnContext(nn.Module):
 
 class SeqAttnContextSecondHop(nn.Module):
     def __init__(self, x_dim, y_dim, out_dim):
-        super(SeqAttnContext, self).__init__()
+        super(SeqAttnContextSecondHop, self).__init__()
 
         self.projx = nn.Sequential(
             nn.Linear(x_dim, out_dim),

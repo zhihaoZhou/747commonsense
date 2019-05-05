@@ -454,7 +454,7 @@ class LM(nn.Module):
 
 # refer to https://towardsdatascience.com/how-to-code-the-transformer-in-pytorch-24db27c8f9ec
 class PositionalEncoder(nn.Module):
-    def __init__(self, d_model, max_seq_len=700):
+    def __init__(self, d_model, max_seq_len=1000):
         super(PositionalEncoder, self).__init__()
         self.d_model = d_model
 

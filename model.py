@@ -584,7 +584,6 @@ class LM(nn.Module):
 #         return self.sigmoid(logits)
 
 
-
 class TriAnWithLMMultiHop(nn.Module):
     def __init__(self, embedding, lm, embedding_pos, embedding_ner, embedding_rel, config, lm_config, device):
         super(TriAnWithLMMultiHop, self).__init__()
@@ -606,7 +605,7 @@ class TriAnWithLMMultiHop(nn.Module):
                            config.hidden_size, config.num_layers, config.rnn_dropout_rate)
         self.q_rnn = BLSTM(config.embed_dim + lm_config.hidden_dim, config.hidden_size,
                            config.num_layers, config.rnn_dropout_rate)
-        self.c_rnn = BLSTM(config.embed_dim * 6 + lm_config.hidden_dim, config.hidden_size, config.num_layers,
+        self.c_rnn = BLSTM(config.embed_dim * 5 + lm_config.hidden_dim, config.hidden_size, config.num_layers,
                            config.rnn_dropout_rate)
 
         # self.embed_dropout = nn.Dropout(config.embed_dropout_rate)
@@ -619,7 +618,6 @@ class TriAnWithLMMultiHop(nn.Module):
         self.d_on_q_attn_2 = SeqAttnContextSecondHop(2*config.embed_dim, config.embed_dim, config.embed_dim)
         self.c_on_q_attn_2 = SeqAttnContextSecondHop(3*config.embed_dim, config.embed_dim, config.embed_dim)
         self.c_on_d_attn_2 = SeqAttnContextSecondHop(3*config.embed_dim, 2*config.embed_dim, config.embed_dim)
-
 
         self.d_on_q_encode = BilinearAttnEncoder(config.hidden_size * 2, config.hidden_size * 2)
         self.q_encode = SelfAttnEncoder(config.hidden_size * 2)
@@ -637,9 +635,9 @@ class TriAnWithLMMultiHop(nn.Module):
         d_embed, q_embed, c_embed = self.embed_dropout(d_embed), self.embed_dropout(q_embed), self.embed_dropout(
             c_embed)
 
-        print('d_embed', d_embed.shape)
-        print('q_embed', q_embed.shape)
-        print('c_embed', c_embed.shape)
+        # print('d_embed', d_embed.shape)
+        # print('q_embed', q_embed.shape)
+        # print('c_embed', c_embed.shape)
 
         # get lm outputs
         _, lm_d_outputs, _ = self.lm(d_words)
@@ -671,23 +669,23 @@ class TriAnWithLMMultiHop(nn.Module):
         d_embed = torch.cat([d_embed, d_on_q_contexts], dim=2)  # feature dim is 2*embed_size
         c_embed = torch.cat([c_embed, c_on_d_contexts, c_on_q_contexts], dim=2)  # feature dim is 3*embed_size
 
-        print('~' * 80)
-        print('d_embed', d_embed.shape)
-        print('q_embed', q_embed.shape)
-        print('c_embed', c_embed.shape)
+        # print('~' * 80)
+        # print('d_embed', d_embed.shape)
+        # print('q_embed', q_embed.shape)
+        # print('c_embed', c_embed.shape)
 
         d_on_q_contexts2 = self.embed_dropout(self.d_on_q_attn_2(d_embed, q_embed, q_mask))
         c_on_q_contexts2 = self.embed_dropout(self.c_on_q_attn_2(c_embed, q_embed, q_mask))
         c_on_d_contexts2 = self.embed_dropout(self.c_on_d_attn_2(c_embed, d_embed, d_mask))
 
         d_embed = torch.cat([d_embed, d_on_q_contexts2], dim=2)  # feature dim is 3*embed_size
-        c_embed = torch.cat([c_embed, c_on_d_contexts2, c_on_q_contexts2], dim=2)  # feature dim is 6*embed_size
+        c_embed = torch.cat([c_embed, c_on_d_contexts2, c_on_q_contexts2], dim=2)  # feature dim is 5*embed_size
 
-        print('~' * 80)
-        print('d_embed', d_embed.shape)
-        print('q_embed', q_embed.shape)
-        print('c_embed', c_embed.shape)
-        raise Exception()
+        # print('~' * 80)
+        # print('d_embed', d_embed.shape)
+        # print('q_embed', q_embed.shape)
+        # print('c_embed', c_embed.shape)
+        # raise Exception()
 
         # form final inputs for rnns
         # d_rnn_inputs = torch.cat([d_embed, d_on_q_contexts, d_pos_embed, d_ner_embed, \

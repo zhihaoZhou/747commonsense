@@ -103,7 +103,9 @@ if __name__ == '__main__':
             #               data_util.embedding_ner, data_util.embedding_rel, config, device).to(device)
 
             lm_train_util.generate()
-            model = TriAnWithLM(data_util.embedding, lm, data_util.embedding_pos,
+            # model = TriAnWithLM(data_util.embedding, lm, data_util.embedding_pos,
+            #                     data_util.embedding_ner, data_util.embedding_rel, config, lm_config, device).to(device)
+            model = TriAnWithLMMultiHop(data_util.embedding, lm, data_util.embedding_pos,
                                 data_util.embedding_ner, data_util.embedding_rel, config, lm_config, device).to(device)
 
             # train tri-an model

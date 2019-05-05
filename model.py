@@ -101,8 +101,6 @@ class SeqAttnContext(nn.Module):
             nn.ReLU()
         )
 
-
-
         self.softmax = nn.Softmax(dim=2)
 
     def forward(self, x, y, y_mask):
@@ -116,6 +114,49 @@ class SeqAttnContext(nn.Module):
         """
         x_proj = self.proj(x)
         y_proj = self.proj(y)
+
+        scores = x_proj.bmm(y_proj.transpose(2, 1))
+
+        # mask scores
+        y_mask = y_mask.unsqueeze(1).expand(scores.size())
+
+        scores.data.masked_fill_(y_mask.data, -float('inf'))
+        weights = self.softmax(scores)
+
+        # Take weighted average
+        contexts = weights.bmm(y)
+        # here, instead of using y, maybe use another projection of y in the future
+
+        return contexts
+
+
+class SeqAttnContextSecondHop(nn.Module):
+    def __init__(self, x_dim, y_dim, out_dim):
+        super(SeqAttnContext, self).__init__()
+
+        self.projx = nn.Sequential(
+            nn.Linear(x_dim, out_dim),
+            nn.ReLU()
+        )
+
+        self.projy = nn.Sequential(
+            nn.Linear(y_dim, out_dim),
+            nn.ReLU()
+        )
+
+        self.softmax = nn.Softmax(dim=2)
+
+    def forward(self, x, y, y_mask):
+        """
+        calculate context vectors for x on y using attention on y
+
+        :param x: (batch_size, x_seq_len, embed_dim)
+        :param y: (batch_size, y_seq_len, embed_dim)
+        :param y_lengths: (batch_size)
+        :return: (batch_size, x_seq_len, embed_dim)
+        """
+        x_proj = self.projx(x)
+        y_proj = self.projy(y)
 
         scores = x_proj.bmm(y_proj.transpose(2, 1))
 
@@ -434,9 +475,113 @@ class LM(nn.Module):
 #         return x
 
 
-class TriAnWithLM(nn.Module):
+# class TriAnWithLM(nn.Module):
+#     def __init__(self, embedding, lm, embedding_pos, embedding_ner, embedding_rel, config, lm_config, device):
+#         super(TriAnWithLM, self).__init__()
+#         self.embedding = embedding
+#         self.lm = lm
+#         self.embedding_pos = embedding_pos
+#         self.embedding_ner = embedding_ner
+#         self.embedding_rel = embedding_rel
+#         self.device = device
+#
+#         # self.d_rnn = BLSTM(config.embed_dim * 2 + config.embed_dim_pos + config.embed_dim_ner + config.
+#         #                    embed_dim_rel * 2 + config.embed_dim_value * 5 + lm_config.hidden_dim,
+#         #                    config.hidden_size, config.num_layers, config.rnn_dropout_rate)
+#         # self.q_rnn = BLSTM(config.embed_dim + config.embed_dim_pos + lm_config.hidden_dim, config.hidden_size,
+#         #                    config.num_layers, config.rnn_dropout_rate)
+#         # self.c_rnn = BLSTM(config.embed_dim * 3 + lm_config.hidden_dim, config.hidden_size, config.num_layers,
+#         #                    config.rnn_dropout_rate)
+#         self.d_rnn = BLSTM(config.embed_dim * 2 + lm_config.hidden_dim,
+#                            config.hidden_size, config.num_layers, config.rnn_dropout_rate)
+#         self.q_rnn = BLSTM(config.embed_dim + lm_config.hidden_dim, config.hidden_size,
+#                            config.num_layers, config.rnn_dropout_rate)
+#         self.c_rnn = BLSTM(config.embed_dim * 3 + lm_config.hidden_dim, config.hidden_size, config.num_layers,
+#                            config.rnn_dropout_rate)
+#
+#         # self.embed_dropout = nn.Dropout(config.embed_dropout_rate)
+#         self.embed_dropout = LockedDropout(config.embed_dropout_rate)
+#
+#         self.d_on_q_attn = SeqAttnContext(config.embed_dim)
+#         self.c_on_q_attn = SeqAttnContext(config.embed_dim)
+#         self.c_on_d_attn = SeqAttnContext(config.embed_dim)
+#
+#
+#         self.d_on_q_encode = BilinearAttnEncoder(config.hidden_size * 2, config.hidden_size * 2)
+#         self.q_encode = SelfAttnEncoder(config.hidden_size * 2)
+#         self.c_encode = SelfAttnEncoder(config.hidden_size * 2)
+#
+#         self.d_c_bilinear = Bilinear(config.hidden_size * 2, config.hidden_size * 2)
+#         self.q_c_bilinear = Bilinear(config.hidden_size * 2, config.hidden_size * 2)
+#
+#         self.sigmoid = nn.Sigmoid()
+#
+#     def forward(self, d_words, d_pos, d_ner, d_lengths, q_words, q_pos, q_lengths, c_words, c_lengths, \
+#                 in_q, in_c, lemma_in_q, lemma_in_c, tf, p_q_relation, p_c_relation):
+#         # embed inputs
+#         d_embed, q_embed, c_embed = self.embedding(d_words), self.embedding(q_words), self.embedding(c_words)
+#         d_embed, q_embed, c_embed = self.embed_dropout(d_embed), self.embed_dropout(q_embed), self.embed_dropout(
+#             c_embed)
+#
+#         # get lm outputs
+#         _, lm_d_outputs, _ = self.lm(d_words)
+#         _, lm_q_outputs, _ = self.lm(q_words)
+#         _, lm_c_outputs, _ = self.lm(c_words)
+#         lm_d_outputs, lm_q_outputs, lm_c_outputs = lm_d_outputs.detach(), \
+#                                                    lm_q_outputs.detach(), lm_c_outputs.detach()
+#
+#         # # get other features
+#         # d_pos_embed, d_ner_embed, q_pos_embed = self.embedding_pos(d_pos), self.embedding_ner(
+#         #     d_ner), self.embedding_pos(q_pos)
+#         # d_pos_embed, d_ner_embed, q_pos_embed = self.embed_dropout(d_pos_embed), self.embed_dropout(
+#         #     d_ner_embed), self.embed_dropout(q_pos_embed)
+#         #
+#         # p_q_rel_embed, p_c_rel_embed = self.embedding_rel(p_q_relation), self.embedding_rel(p_c_relation)
+#         # p_q_rel_embed, p_c_rel_embed = self.embed_dropout(p_q_rel_embed), self.embed_dropout(p_c_rel_embed)
+#
+#         # get masks
+#         d_mask = lengths_to_mask(d_lengths, self.device)
+#         q_mask = lengths_to_mask(q_lengths, self.device)
+#         c_mask = lengths_to_mask(c_lengths, self.device)
+#
+#         # get attention contexts
+#         d_on_q_contexts = self.embed_dropout(self.d_on_q_attn(d_embed, q_embed, q_mask))
+#         c_on_q_contexts = self.embed_dropout(self.c_on_q_attn(c_embed, q_embed, q_mask))
+#         c_on_d_contexts = self.embed_dropout(self.c_on_d_attn(c_embed, d_embed, d_mask))
+#
+#         # form final inputs for rnns
+#         # d_rnn_inputs = torch.cat([d_embed, d_on_q_contexts, d_pos_embed, d_ner_embed, \
+#         #                           p_q_rel_embed, p_c_rel_embed, in_q, in_c, lemma_in_q, lemma_in_c,
+#         #                           tf, lm_d_outputs], dim=2)
+#         # q_rnn_inputs = torch.cat([q_embed, q_pos_embed, lm_q_outputs], dim=2)
+#         # c_rnn_inputs = torch.cat([c_embed, c_on_q_contexts, c_on_d_contexts, lm_c_outputs], dim=2)
+#         d_rnn_inputs = torch.cat([d_embed, d_on_q_contexts, lm_d_outputs], dim=2)
+#         q_rnn_inputs = torch.cat([q_embed, lm_q_outputs], dim=2)
+#         c_rnn_inputs = torch.cat([c_embed, c_on_q_contexts, c_on_d_contexts, lm_c_outputs], dim=2)
+#
+#         # calculate rnn outputs
+#         d_rnn_outputs = self.d_rnn(d_rnn_inputs, d_lengths)
+#         q_rnn_outputs = self.q_rnn(q_rnn_inputs, q_lengths)
+#         c_rnn_outputs = self.c_rnn(c_rnn_inputs, c_lengths)
+#
+#         # get final representations
+#         q_rep = self.q_encode(q_rnn_outputs, q_mask)
+#         c_rep = self.c_encode(c_rnn_outputs, c_mask)
+#         d_rep = self.d_on_q_encode(d_rnn_outputs, q_rep, d_mask)
+#
+#         # add dropout here!!!!!
+#
+#         dWc = self.d_c_bilinear(d_rep, c_rep)
+#         qWc = self.q_c_bilinear(q_rep, c_rep)
+#
+#         logits = dWc + qWc
+#         return self.sigmoid(logits)
+
+
+
+class TriAnWithLMMultiHop(nn.Module):
     def __init__(self, embedding, lm, embedding_pos, embedding_ner, embedding_rel, config, lm_config, device):
-        super(TriAnWithLM, self).__init__()
+        super(TriAnWithLMMultiHop, self).__init__()
         self.embedding = embedding
         self.lm = lm
         self.embedding_pos = embedding_pos
@@ -458,12 +603,16 @@ class TriAnWithLM(nn.Module):
         self.c_rnn = BLSTM(config.embed_dim * 3 + lm_config.hidden_dim, config.hidden_size, config.num_layers,
                            config.rnn_dropout_rate)
 
-        self.embed_dropout = nn.Dropout(config.embed_dropout_rate)
-        # self.embed_dropout = LockedDropout(config.embed_dropout_rate)
+        # self.embed_dropout = nn.Dropout(config.embed_dropout_rate)
+        self.embed_dropout = LockedDropout(config.embed_dropout_rate)
 
         self.d_on_q_attn = SeqAttnContext(config.embed_dim)
         self.c_on_q_attn = SeqAttnContext(config.embed_dim)
         self.c_on_d_attn = SeqAttnContext(config.embed_dim)
+
+        self.d_on_q_attn_2 = SeqAttnContextSecondHop(2*config.embed_dim, config.embed_dim, config.embed_dim)
+        self.c_on_q_attn_2 = SeqAttnContextSecondHop(3*config.embed_dim, config.embed_dim, config.embed_dim)
+        self.c_on_d_attn_2 = SeqAttnContextSecondHop(3*config.embed_dim, 2*config.embed_dim, config.embed_dim)
 
 
         self.d_on_q_encode = BilinearAttnEncoder(config.hidden_size * 2, config.hidden_size * 2)
@@ -501,12 +650,33 @@ class TriAnWithLM(nn.Module):
         # get masks
         d_mask = lengths_to_mask(d_lengths, self.device)
         q_mask = lengths_to_mask(q_lengths, self.device)
-        c_mask = lengths_to_mask(c_lengths, self.device)
 
         # get attention contexts
         d_on_q_contexts = self.embed_dropout(self.d_on_q_attn(d_embed, q_embed, q_mask))
         c_on_q_contexts = self.embed_dropout(self.c_on_q_attn(c_embed, q_embed, q_mask))
         c_on_d_contexts = self.embed_dropout(self.c_on_d_attn(c_embed, d_embed, d_mask))
+
+        # second hop attention
+        d_embed = torch.cat([d_embed, d_on_q_contexts], dim=2)  # feature dim is 2*embed_size
+        c_embed = torch.cat([c_embed, c_on_d_contexts, c_on_q_contexts], dim=2)  # feature dim is 3*embed_size
+
+        d_on_q_contexts2 = self.embed_dropout(self.d_on_q_attn_2(d_embed, q_embed, q_mask))
+        c_on_q_contexts2 = self.embed_dropout(self.c_on_q_attn_2(c_embed, q_embed, q_mask))
+        c_on_d_contexts2 = self.embed_dropout(self.c_on_d_attn_2(c_embed, d_embed, d_mask))
+
+        print('d_on_q_contexts2', d_on_q_contexts2.shape)
+        print('c_on_q_contexts2', c_on_q_contexts2.shape)
+        print('c_on_d_contexts2', c_on_d_contexts2.shape)
+        raise Exception('debug')
+
+
+
+        # d_on_q_contexts2 = self.embed_dropout(self.d_on_q_attn(torch.cat([d_embed, d_on_q_contexts], dim=2)
+        #                                                        , q_embed, q_mask))
+        # c_on_q_contexts2 = self.embed_dropout(self.c_on_q_attn(torch.cat(c_embed, q_embed, q_mask))
+        # c_on_d_contexts2 = self.embed_dropout(self.c_on_d_attn(c_embed, d_embed, d_mask))
+
+
 
         # form final inputs for rnns
         # d_rnn_inputs = torch.cat([d_embed, d_on_q_contexts, d_pos_embed, d_ner_embed, \
@@ -535,6 +705,7 @@ class TriAnWithLM(nn.Module):
 
         logits = dWc + qWc
         return self.sigmoid(logits)
+
 
 
 # class TriAnWithLM(nn.Module):

@@ -648,12 +648,12 @@ class TriAnWithLMMultiHop(nn.Module):
 
         d_pe, q_pe, c_pe = self.pe(d_embed), self.pe(q_embed), self.pe(c_embed)
 
-        print('d_embed', d_embed.shape)
-        print('q_embed', q_embed.shape)
-        print('c_embed', c_embed.shape)
-        print('d_pe', d_pe.shape)
-        print('q_pe', q_pe.shape)
-        print('c_pe', c_pe.shape)
+        # print('d_embed', d_embed.shape)
+        # print('q_embed', q_embed.shape)
+        # print('c_embed', c_embed.shape)
+        # print('d_pe', d_pe.shape)
+        # print('q_pe', q_pe.shape)
+        # print('c_pe', c_pe.shape)
 
         # get lm outputs
         _, lm_d_outputs, _ = self.lm(d_words)
@@ -689,10 +689,10 @@ class TriAnWithLMMultiHop(nn.Module):
         q_embed = torch.cat([q_embed, q_pe], dim=2) # feature dim is 2*embed
         c_embed = torch.cat([c_embed, c_on_d_contexts, c_on_q_contexts, c_pe], dim=2)  # feature dim is 4*embed_size
 
-        print('~' * 80)
-        print('d_embed', d_embed.shape)
-        print('q_embed', q_embed.shape)
-        print('c_embed', c_embed.shape)
+        # print('~' * 80)
+        # print('d_embed', d_embed.shape)
+        # print('q_embed', q_embed.shape)
+        # print('c_embed', c_embed.shape)
 
         d_on_q_contexts2 = self.embed_dropout(self.d_on_q_attn_2(d_embed, q_embed, q_mask))
         c_on_q_contexts2 = self.embed_dropout(self.c_on_q_attn_2(c_embed, q_embed, q_mask))
@@ -704,11 +704,11 @@ class TriAnWithLMMultiHop(nn.Module):
         d_embed = torch.cat([d_embed, d_on_q_contexts2], dim=2)  # feature dim is 3*embed_size
         c_embed = torch.cat([c_embed, c_on_d_contexts2, c_on_q_contexts2], dim=2)  # feature dim is 5*embed_size
 
-        print('~' * 80)
-        print('d_embed', d_embed.shape)
-        print('q_embed', q_embed.shape)
-        print('c_embed', c_embed.shape)
-        raise Exception()
+        # print('~' * 80)
+        # print('d_embed', d_embed.shape)
+        # print('q_embed', q_embed.shape)
+        # print('c_embed', c_embed.shape)
+        # raise Exception()
 
         # form final inputs for rnns
         # d_rnn_inputs = torch.cat([d_embed, d_on_q_contexts, d_pos_embed, d_ner_embed, \

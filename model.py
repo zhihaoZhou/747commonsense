@@ -661,12 +661,12 @@ class TriAnWithLMMultiHop(nn.Module):
         c_mask = lengths_to_mask(c_lengths, self.device)
 
         # get attention contexts
-        # d_on_q_contexts = self.embed_dropout(self.d_on_q_attn(d_embed, q_embed, q_mask))
-        # c_on_q_contexts = self.embed_dropout(self.c_on_q_attn(c_embed, q_embed, q_mask))
-        # c_on_d_contexts = self.embed_dropout(self.c_on_d_attn(c_embed, d_embed, d_mask))
-        d_on_q_contexts = self.d_on_q_attn(d_embed, q_embed, q_mask)
-        c_on_q_contexts = self.c_on_q_attn(c_embed, q_embed, q_mask)
-        c_on_d_contexts = self.c_on_d_attn(c_embed, d_embed, d_mask)
+        d_on_q_contexts = self.embed_dropout(self.d_on_q_attn(d_embed, q_embed, q_mask))
+        c_on_q_contexts = self.embed_dropout(self.c_on_q_attn(c_embed, q_embed, q_mask))
+        c_on_d_contexts = self.embed_dropout(self.c_on_d_attn(c_embed, d_embed, d_mask))
+        # d_on_q_contexts = self.d_on_q_attn(d_embed, q_embed, q_mask)
+        # c_on_q_contexts = self.c_on_q_attn(c_embed, q_embed, q_mask)
+        # c_on_d_contexts = self.c_on_d_attn(c_embed, d_embed, d_mask)
 
         # second hop attention
         d_embed = torch.cat([d_embed, d_on_q_contexts], dim=2)  # feature dim is 2*embed_size

@@ -661,9 +661,12 @@ class TriAnWithLMMultiHop(nn.Module):
         c_mask = lengths_to_mask(c_lengths, self.device)
 
         # get attention contexts
-        d_on_q_contexts = self.embed_dropout(self.d_on_q_attn(d_embed, q_embed, q_mask))
-        c_on_q_contexts = self.embed_dropout(self.c_on_q_attn(c_embed, q_embed, q_mask))
-        c_on_d_contexts = self.embed_dropout(self.c_on_d_attn(c_embed, d_embed, d_mask))
+        # d_on_q_contexts = self.embed_dropout(self.d_on_q_attn(d_embed, q_embed, q_mask))
+        # c_on_q_contexts = self.embed_dropout(self.c_on_q_attn(c_embed, q_embed, q_mask))
+        # c_on_d_contexts = self.embed_dropout(self.c_on_d_attn(c_embed, d_embed, d_mask))
+        d_on_q_contexts = self.d_on_q_attn(d_embed, q_embed, q_mask)
+        c_on_q_contexts = self.c_on_q_attn(c_embed, q_embed, q_mask)
+        c_on_d_contexts = self.c_on_d_attn(c_embed, d_embed, d_mask)
 
         # second hop attention
         d_embed = torch.cat([d_embed, d_on_q_contexts], dim=2)  # feature dim is 2*embed_size
@@ -674,9 +677,12 @@ class TriAnWithLMMultiHop(nn.Module):
         # print('q_embed', q_embed.shape)
         # print('c_embed', c_embed.shape)
 
-        d_on_q_contexts2 = self.embed_dropout(self.d_on_q_attn_2(d_embed, q_embed, q_mask))
-        c_on_q_contexts2 = self.embed_dropout(self.c_on_q_attn_2(c_embed, q_embed, q_mask))
-        c_on_d_contexts2 = self.embed_dropout(self.c_on_d_attn_2(c_embed, d_embed, d_mask))
+        # d_on_q_contexts2 = self.embed_dropout(self.d_on_q_attn_2(d_embed, q_embed, q_mask))
+        # c_on_q_contexts2 = self.embed_dropout(self.c_on_q_attn_2(c_embed, q_embed, q_mask))
+        # c_on_d_contexts2 = self.embed_dropout(self.c_on_d_attn_2(c_embed, d_embed, d_mask))
+        d_on_q_contexts2 = self.d_on_q_attn_2(d_embed, q_embed, q_mask)
+        c_on_q_contexts2 = self.c_on_q_attn_2(c_embed, q_embed, q_mask)
+        c_on_d_contexts2 = self.c_on_d_attn_2(c_embed, d_embed, d_mask)
 
         d_embed = torch.cat([d_embed, d_on_q_contexts2], dim=2)  # feature dim is 3*embed_size
         c_embed = torch.cat([c_embed, c_on_d_contexts2, c_on_q_contexts2], dim=2)  # feature dim is 5*embed_size
@@ -708,7 +714,6 @@ class TriAnWithLMMultiHop(nn.Module):
         d_rep = self.d_on_q_encode(d_rnn_outputs, q_rep, d_mask)
 
         # add dropout here!!!!!
-
         dWc = self.d_c_bilinear(d_rep, c_rep)
         qWc = self.q_c_bilinear(q_rep, c_rep)
 

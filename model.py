@@ -471,23 +471,23 @@ class PositionalEncoder(nn.Module):
         pe = pe.unsqueeze(0)
         self.register_buffer('pe', pe)
 
-    # def forward(self, x):
-    #     # make embeddings relatively larger
-    #     x = x * math.sqrt(self.d_model)
-    #     # add constant to embedding
-    #     seq_len = x.size(1)
-    #     x = x + Variable(self.pe[:, :seq_len], \
-    #                      requires_grad=False).cuda()
-    #     return x
-
     def forward(self, x):
         # make embeddings relatively larger
         x = x * math.sqrt(self.d_model)
         # add constant to embedding
         seq_len = x.size(1)
-        ans = Variable(self.pe[:, :seq_len], \
-                         requires_grad=False).cuda()
-        return ans
+        x = x + Variable(self.pe[:, :seq_len], \
+                         requires_grad=False).cuda() - x
+        return x
+
+    # def forward(self, x):
+    #     # make embeddings relatively larger
+    #     x = x * math.sqrt(self.d_model)
+    #     # add constant to embedding
+    #     seq_len = x.size(1)
+    #     ans = Variable(self.pe[:, :seq_len], \
+    #                      requires_grad=False).cuda()
+    #     return ans
 
 
 # class TriAnWithLM(nn.Module):

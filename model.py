@@ -667,16 +667,16 @@ class TriAnWithLMMultiHop(nn.Module):
         print('d_on_q_contexts2', d_on_q_contexts2.shape)
         print('c_on_q_contexts2', c_on_q_contexts2.shape)
         print('c_on_d_contexts2', c_on_d_contexts2.shape)
+
+        d_embed = torch.cat([d_embed, d_on_q_contexts2], dim=2)  # feature dim is 2*embed_size
+        c_embed = torch.cat([c_embed, c_on_d_contexts2, c_on_q_contexts2], dim=2)  # feature dim is 3*embed_size
+
+        print('d_embed', d_embed.shape)
+        print('q_embed', q_embed.shape)
+        print('c_embed', c_embed.shape)
+
+
         raise Exception('debug')
-
-
-
-        # d_on_q_contexts2 = self.embed_dropout(self.d_on_q_attn(torch.cat([d_embed, d_on_q_contexts], dim=2)
-        #                                                        , q_embed, q_mask))
-        # c_on_q_contexts2 = self.embed_dropout(self.c_on_q_attn(torch.cat(c_embed, q_embed, q_mask))
-        # c_on_d_contexts2 = self.embed_dropout(self.c_on_d_attn(c_embed, d_embed, d_mask))
-
-
 
         # form final inputs for rnns
         # d_rnn_inputs = torch.cat([d_embed, d_on_q_contexts, d_pos_embed, d_ner_embed, \

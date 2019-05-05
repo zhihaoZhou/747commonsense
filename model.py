@@ -134,12 +134,17 @@ class SeqAttnContextSecondHop(nn.Module):
     def __init__(self, x_dim, y_dim, out_dim):
         super(SeqAttnContextSecondHop, self).__init__()
 
-        self.projx = nn.Sequential(
+        self.proj_query = nn.Sequential(
             nn.Linear(x_dim, out_dim),
             nn.ReLU()
         )
 
-        self.projy = nn.Sequential(
+        self.proj_key = nn.Sequential(
+            nn.Linear(y_dim, out_dim),
+            nn.ReLU()
+        )
+
+        self.proj_value = nn.Sequential(
             nn.Linear(y_dim, out_dim),
             nn.ReLU()
         )
@@ -155,8 +160,9 @@ class SeqAttnContextSecondHop(nn.Module):
         :param y_lengths: (batch_size)
         :return: (batch_size, x_seq_len, embed_dim)
         """
-        x_proj = self.projx(x)
-        y_proj = self.projy(y)
+        x_proj = self.proj_query(x)
+        y_proj = self.proj_key(y)
+        values = self.proj_value(y)
 
         scores = x_proj.bmm(y_proj.transpose(2, 1))
 
@@ -167,7 +173,7 @@ class SeqAttnContextSecondHop(nn.Module):
         weights = self.softmax(scores)
 
         # Take weighted average
-        contexts = weights.bmm(y)
+        contexts = weights.bmm(values)
         # here, instead of using y, maybe use another projection of y in the future
 
         return contexts

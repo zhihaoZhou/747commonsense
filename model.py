@@ -610,11 +610,11 @@ class TriAnWithLMMultiHop(nn.Module):
         #                    config.num_layers, config.rnn_dropout_rate)
         # self.c_rnn = BLSTM(config.embed_dim * 3 + lm_config.hidden_dim, config.hidden_size, config.num_layers,
         #                    config.rnn_dropout_rate)
-        self.d_rnn = BLSTM(config.embed_dim * 3 + lm_config.hidden_dim,
+        self.d_rnn = BLSTM(config.embed_dim * 4 + lm_config.hidden_dim,
                            config.hidden_size, config.num_layers, config.rnn_dropout_rate)
-        self.q_rnn = BLSTM(config.embed_dim + lm_config.hidden_dim, config.hidden_size,
+        self.q_rnn = BLSTM(config.embed_dim * 2 + lm_config.hidden_dim, config.hidden_size,
                            config.num_layers, config.rnn_dropout_rate)
-        self.c_rnn = BLSTM(config.embed_dim * 5 + lm_config.hidden_dim, config.hidden_size, config.num_layers,
+        self.c_rnn = BLSTM(config.embed_dim * 6 + lm_config.hidden_dim, config.hidden_size, config.num_layers,
                            config.rnn_dropout_rate)
 
         # self.embed_dropout = nn.Dropout(config.embed_dropout_rate)

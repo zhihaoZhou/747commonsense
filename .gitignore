@@ -3,3 +3,4 @@ data
 *.tar
 preprocessed
 __pycache__
+.DS_Store

@@ -1,4 +1,5 @@
+# DR-segmentation
 Please download data [here](https://s3.amazonaws.com/747-common-sense-data/preprocessed.tar).
 
-reference github project:
-https://github.com/intfloat/commonsense-rc
+The reference github project for our project is [here](https://github.com/intfloat/commonsense-rc).
+

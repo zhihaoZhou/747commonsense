@@ -1,5 +1,4 @@
-download data from:
-https://s3.amazonaws.com/747-common-sense-data/preprocessed.tar
+Please download data [here](https://s3.amazonaws.com/747-common-sense-data/preprocessed.tar).
 
 reference github project:
 https://github.com/intfloat/commonsense-rc

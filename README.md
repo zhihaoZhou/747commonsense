@@ -1,5 +1,5 @@
 # Machine Comprehension Using Script Knowledge
-Open-sourced code for 11-747 Course Project: *Incorporating Script Knowledge for Machine Comprehension*
+*Incorporating Script Knowledge for Machine Comprehension*
 
 Please see our [Report](https://drive.google.com/file/d/1NOxFKeGOru7qXUmwpIkt6_7-hSBQObpl/view).
 
